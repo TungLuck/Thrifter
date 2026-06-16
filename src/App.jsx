@@ -758,8 +758,8 @@ const layoutCSS = `
   .app-shell .subdept-head {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    align-items: center;
+    gap: 8px;
+    align-items: flex-start;
   }
 
   .app-shell .search-result-card {
@@ -1145,7 +1145,7 @@ function CategoryDetailsEditor({
       </div>
 
       <div className="field-group">
-        <span className="field-label">Notes</span>
+        <span className="field-label">Notes (Optional)</span>
         <textarea
           rows={3}
           placeholder={notePlaceholder}
@@ -1580,13 +1580,36 @@ function DepartmentEditor({ departments, onChange }) {
             {safeArray(dept.subDepartments).map((sub) => (
               <div key={sub.id} className="subdept-card">
                 <div className="subdept-head">
-                  <strong style={{ overflowWrap: 'anywhere' }}>{sub.name || 'Untitled subcategory'}</strong>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflowWrap: 'anywhere',
+                      fontWeight: 700,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {sub.name || 'Untitled subcategory'}
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeSubDepartment(dept.id, sub.id)}
-                    style={APP_STYLES.buttonSecondary}
+                    style={{
+                      ...APP_STYLES.buttonTiny,
+                      width: '30px',
+                      minWidth: '30px',
+                      padding: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.95rem',
+                      lineHeight: 1,
+                      flex: '0 0 auto',
+                    }}
+                    title="Delete subcategory"
+                    aria-label="Delete subcategory"
                   >
-                    Remove
+                    🗑
                   </button>
                 </div>
 
@@ -1597,7 +1620,7 @@ function DepartmentEditor({ departments, onChange }) {
                   onPriceChange={(value) => updateSubField(dept.id, sub.id, 'price', value)}
                   notes={sub.notes}
                   onNotesChange={(value) => updateSubField(dept.id, sub.id, 'notes', value)}
-                  notePlaceholder="List items you found in this subcategory. Example: hardcover mysteries, puzzle sets, glass bowls."
+                  notePlaceholder=""
                 />
               </div>
             ))}
