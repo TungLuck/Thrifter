@@ -34,54 +34,6 @@ const PRESET_DEPARTMENTS = [
   'Media (DVDs/CDs/Records)',
 ]
 
-const COMMON_NOTE_SUGGESTIONS = [
-  'pants',
-  'jeans',
-  'shorts',
-  'shirts',
-  'tees',
-  'blouses',
-  'jackets',
-  'coats',
-  'sweaters',
-  'hoodies',
-  'boots',
-  'sneakers',
-  'sandals',
-  'dresses',
-  'skirts',
-  'chairs',
-  'tables',
-  'desk',
-  'couch',
-  'sofa',
-  'lamp',
-  'mug',
-  'bowl',
-  'plates',
-  'pans',
-  'pots',
-  'books',
-  'novels',
-  'DVDs',
-  'records',
-  'vinyl',
-  'toys',
-  'games',
-  'puzzles',
-  'electronics',
-  'phone chargers',
-  'cables',
-  'kitchenware',
-  'home decor',
-  'workwear',
-  'kids clothing',
-  'men’s clothing',
-  'women’s clothing',
-  'formalwear',
-  'casualwear',
-]
-
 const EMPTY_FORM = {
   storeName: '',
   address: '',
@@ -120,6 +72,237 @@ const STOP_WORDS = new Set([
   'want',
   'with',
 ])
+
+const CATEGORY_HINTS = {
+  clothing: [
+    'clothing',
+    'clothes',
+    'apparel',
+    'fashion',
+    'shirt',
+    'shirts',
+    'tee',
+    'tees',
+    'tshirt',
+    'tshirts',
+    't-shirt',
+    't-shirts',
+    'top',
+    'tops',
+    'blouse',
+    'blouses',
+    'sweater',
+    'sweaters',
+    'hoodie',
+    'hoodies',
+    'jacket',
+    'jackets',
+    'coat',
+    'coats',
+    'jean',
+    'jeans',
+    'denim',
+    'pants',
+    'trouser',
+    'trousers',
+    'shorts',
+    'dress',
+    'dresses',
+    'skirt',
+    'skirts',
+    'suit',
+    'suits',
+  ],
+  shoes: [
+    'shoes',
+    'shoe',
+    'footwear',
+    'sneaker',
+    'sneakers',
+    'boot',
+    'boots',
+    'sandals',
+    'sandal',
+    'heel',
+    'heels',
+    'loafer',
+    'loafers',
+    'slipper',
+    'slippers',
+    'cleat',
+    'cleats',
+  ],
+  furniture: [
+    'furniture',
+    'chair',
+    'chairs',
+    'table',
+    'tables',
+    'desk',
+    'desks',
+    'couch',
+    'couches',
+    'sofa',
+    'sofas',
+    'loveseat',
+    'loveseats',
+    'bed',
+    'beds',
+    'mattress',
+    'mattresses',
+    'dresser',
+    'dressers',
+    'nightstand',
+    'nightstands',
+    'shelf',
+    'shelves',
+    'cabinet',
+    'cabinets',
+    'bookcase',
+    'bookcases',
+    'stool',
+    'stools',
+    'bench',
+    'benches',
+  ],
+  electronics: [
+    'electronics',
+    'electronic',
+    'tv',
+    'tvs',
+    'television',
+    'televisions',
+    'computer',
+    'computers',
+    'laptop',
+    'laptops',
+    'phone',
+    'phones',
+    'tablet',
+    'tablets',
+    'monitor',
+    'monitors',
+    'speaker',
+    'speakers',
+    'headphone',
+    'headphones',
+    'console',
+    'consoles',
+    'game',
+    'games',
+    'camera',
+    'cameras',
+    'printer',
+    'printers',
+    'charger',
+    'chargers',
+    'cable',
+    'cables',
+  ],
+  books: [
+    'books',
+    'book',
+    'novel',
+    'novels',
+    'paperback',
+    'paperbacks',
+    'hardcover',
+    'hardcovers',
+    'magazine',
+    'magazines',
+    'comic',
+    'comics',
+    'textbook',
+    'textbooks',
+    'cookbook',
+    'cookbooks',
+    'reader',
+    'readers',
+  ],
+  toys: [
+    'toys',
+    'toy',
+    'lego',
+    'legos',
+    'puzzle',
+    'puzzles',
+    'doll',
+    'dolls',
+    'figure',
+    'figures',
+    'plush',
+    'stuffed',
+    'game',
+    'games',
+    'playset',
+    'playsets',
+  ],
+  housewares: [
+    'housewares',
+    'houseware',
+    'kitchen',
+    'kitchenware',
+    'dish',
+    'dishes',
+    'plate',
+    'plates',
+    'bowl',
+    'bowls',
+    'pan',
+    'pans',
+    'pot',
+    'pots',
+    'mug',
+    'mugs',
+    'glass',
+    'glasses',
+    'lamp',
+    'lamps',
+    'lamp',
+    'decor',
+    'decoration',
+    'blanket',
+    'blankets',
+    'pillow',
+    'pillows',
+    'rug',
+    'rugs',
+    'curtain',
+    'curtains',
+    'storage',
+    'basket',
+    'baskets',
+    'vase',
+    'vases',
+    'utensil',
+    'utensils',
+    'blender',
+    'toaster',
+    'microwave',
+    'vacuum',
+  ],
+  media: [
+    'media',
+    'dvd',
+    'dvds',
+    'cd',
+    'cds',
+    'record',
+    'records',
+    'vinyl',
+    'album',
+    'albums',
+    'blu-ray',
+    'bluray',
+    'cassette',
+    'cassettes',
+    'tape',
+    'tapes',
+    'movie',
+    'movies',
+    'music',
+  ],
+}
 
 const EMPTY_ARRAY = []
 
@@ -163,77 +346,116 @@ function tokenize(value) {
     .filter((t) => !STOP_WORDS.has(t))
 }
 
-function safeArray(value) {
-  return Array.isArray(value) ? value : EMPTY_ARRAY
-}
+function buildQueryProfile(query) {
+  const raw = normalizeText(query)
+  const tokens = tokenize(query)
+  const expandedTokens = new Set(tokens)
+  const categoryHints = new Set()
 
-function normalizeDepartmentRecord(dept) {
-  const safeDept = dept || {}
+  for (const token of tokens) {
+    for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
+      if (
+        aliases.some(
+          (alias) =>
+            alias === token ||
+            alias.includes(token) ||
+            token.includes(alias)
+        )
+      ) {
+        categoryHints.add(categoryKey)
+      }
+    }
 
-  return {
-    id: safeDept.id || makeId(),
-    name: safeDept.name || '',
-    rating: Number(safeDept.rating) || 3,
-    notes: typeof safeDept.notes === 'string' ? safeDept.notes : '',
-    subDepartments: safeArray(safeDept.subDepartments).map((sub) => ({
-      id: sub?.id || makeId(),
-      name: sub?.name || '',
-      rating: Number(sub?.rating) || 3,
-      notes: typeof sub?.notes === 'string' ? sub.notes : '',
-    })),
-  }
-}
+    // A few helpful broad expansions for common thrift-item queries
+    const extra = {
+      lamp: ['housewares'],
+      chair: ['furniture'],
+      couch: ['furniture'],
+      sofa: ['furniture'],
+      desk: ['furniture'],
+      jeans: ['clothing'],
+      denim: ['clothing'],
+      tv: ['electronics'],
+      phone: ['electronics'],
+      laptop: ['electronics'],
+      book: ['books'],
+      novel: ['books'],
+      puzzle: ['toys'],
+      toy: ['toys'],
+      dvd: ['media'],
+      record: ['media'],
+      vinyl: ['media'],
+      mug: ['housewares'],
+      bowl: ['housewares'],
+      blanket: ['housewares'],
+      pillow: ['housewares'],
+    }[token]
 
-function normalizeStoreRecord(store) {
-  const safeStore = store || {}
-
-  return {
-    id: safeStore.id || Date.now(),
-    name: safeStore.name || '',
-    address: safeStore.address || '',
-    lat: Number(safeStore.lat) || 0,
-    lng: Number(safeStore.lng) || 0,
-    departments: safeArray(safeStore.departments).map(normalizeDepartmentRecord),
-  }
-}
-
-function containsExactTokenMatch(text, queryTokens) {
-  const fieldTokens = tokenize(text)
-  if (!fieldTokens.length || !queryTokens.length) return false
-
-  const fieldSet = new Set(fieldTokens)
-  return queryTokens.some((token) => fieldSet.has(token))
-}
-
-function scoreField(text, queryProfile, weight) {
-  const normalized = normalizeText(text)
-  if (!normalized || !queryProfile.tokens.length) {
-    return { score: 0, matchedTokens: 0 }
-  }
-
-  const fieldTokens = tokenize(text)
-  if (!fieldTokens.length) {
-    return { score: 0, matchedTokens: 0 }
-  }
-
-  const fieldSet = new Set(fieldTokens)
-  let score = 0
-  let matchedTokens = 0
-
-  for (const token of queryProfile.tokens) {
-    if (fieldSet.has(token)) {
-      score += weight * 4
-      matchedTokens += 1
+    if (extra) {
+      for (const hint of extra) categoryHints.add(hint)
     }
   }
 
-  if (queryProfile.tokens.length > 1 && normalized.includes(queryProfile.raw)) {
-    score += weight * 3
+  return { raw, tokens, expandedTokens, categoryHints }
+}
+
+function containsLooseMatch(text, queryProfile) {
+  const normalized = normalizeText(text)
+  if (!normalized || !queryProfile.raw) return false
+
+  if (normalized.includes(queryProfile.raw)) return true
+
+  for (const token of queryProfile.tokens) {
+    if (normalized.includes(token)) return true
   }
 
-  score += matchedTokens * weight * 0.6
+  return false
+}
 
-  return { score, matchedTokens }
+function tokenOverlapScore(text, queryProfile) {
+  const textTokens = tokenize(text)
+  if (!textTokens.length || !queryProfile.tokens.length) return 0
+
+  let score = 0
+  const matched = new Set()
+
+  for (const textToken of textTokens) {
+    if (queryProfile.expandedTokens.has(textToken)) {
+      matched.add(textToken)
+      score += 3
+      continue
+    }
+
+    for (const queryToken of queryProfile.tokens) {
+      if (
+        textToken === queryToken ||
+        textToken.includes(queryToken) ||
+        queryToken.includes(textToken)
+      ) {
+        matched.add(textToken)
+        score += 2
+        break
+      }
+    }
+  }
+
+  return score + matched.size * 0.5
+}
+
+function resolveCategoryKey(label) {
+  const normalized = normalizeText(label)
+
+  for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
+    if (
+      aliases.some(
+        (alias) => normalized === alias || normalized.includes(alias)
+      )
+    ) {
+      return categoryKey
+    }
+  }
+
+  return null
 }
 
 function shortenAddress(address) {
@@ -250,6 +472,10 @@ function shortenAddress(address) {
     parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
 
   return city ? `${street}, ${city}` : street
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : EMPTY_ARRAY
 }
 
 // ---------------- MAP CLICK ----------------
@@ -336,47 +562,18 @@ function StoreDepartmentsDisplay({ departments }) {
               {dept.name} - {dept.rating}/5
             </div>
 
-            {dept.notes?.trim() && (
-              <div
-                style={{
-                  marginTop: 3,
-                  marginLeft: 14,
-                  fontSize: '0.85em',
-                  color: '#667085',
-                  lineHeight: 1.35,
-                }}
-              >
-                Notes: {dept.notes}
-              </div>
-            )}
-
             {subDepartments.length > 0 && (
               <div style={{ marginLeft: 16, marginTop: 4 }}>
                 {subDepartments.map((sub) => (
-                  <div key={sub.id} style={{ marginBottom: 6 }}>
-                    <div
-                      style={{
-                        fontSize: '0.9em',
-                        color: '#667085',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {sub.name} - {sub.rating}/5
-                    </div>
-
-                    {sub.notes?.trim() && (
-                      <div
-                        style={{
-                          marginTop: 2,
-                          marginLeft: 14,
-                          fontSize: '0.82em',
-                          color: '#98A2B3',
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        Notes: {sub.notes}
-                      </div>
-                    )}
+                  <div
+                    key={sub.id}
+                    style={{
+                      fontSize: '0.9em',
+                      color: '#667085',
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {sub.name} - {sub.rating}/5
                   </div>
                 ))}
               </div>
@@ -393,22 +590,21 @@ function StoreDepartmentsDisplay({ departments }) {
 function DepartmentEditor({ departments, onChange }) {
   const [customDeptName, setCustomDeptName] = useState('')
 
-  const update = (next) => onChange(next)
-
   const addDepartment = (name) => {
     if (!name.trim()) return
 
-    update([
+    onChange([
       ...departments,
       {
         id: makeId(),
         name,
         rating: 3,
-        notes: '',
         subDepartments: [],
       },
     ])
   }
+
+  const update = (next) => onChange(next)
 
   const removeDepartment = (id) =>
     update(departments.filter((d) => d.id !== id))
@@ -417,13 +613,6 @@ function DepartmentEditor({ departments, onChange }) {
     update(
       departments.map((d) =>
         d.id === id ? { ...d, rating: Number(rating) } : d
-      )
-    )
-
-  const updateDeptNotes = (id, notes) =>
-    update(
-      departments.map((d) =>
-        d.id === id ? { ...d, notes } : d
       )
     )
 
@@ -440,7 +629,6 @@ function DepartmentEditor({ departments, onChange }) {
                   id: makeId(),
                   name,
                   rating: 3,
-                  notes: '',
                 },
               ],
             }
@@ -471,20 +659,6 @@ function DepartmentEditor({ departments, onChange }) {
               ...d,
               subDepartments: safeArray(d.subDepartments).map((s) =>
                 s.id === subId ? { ...s, rating: Number(rating) } : s
-              ),
-            }
-          : d
-      )
-    )
-
-  const updateSubNotes = (deptId, subId, notes) =>
-    update(
-      departments.map((d) =>
-        d.id === deptId
-          ? {
-              ...d,
-              subDepartments: safeArray(d.subDepartments).map((s) =>
-                s.id === subId ? { ...s, notes } : s
               ),
             }
           : d
@@ -545,33 +719,19 @@ function DepartmentEditor({ departments, onChange }) {
           key={dept.id}
           style={{
             maxWidth: '100%',
-            width: '100%',
             boxSizing: 'border-box',
             overflow: 'hidden',
             marginBottom: '10px',
           }}
         >
-          <legend
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              flexWrap: 'wrap',
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-              padding: '0 6px',
-              whiteSpace: 'normal',
-            }}
-          >
-            <span style={{ maxWidth: '100%', overflowWrap: 'anywhere' }}>
-              {dept.name}
-            </span>
+          <legend>
+            {dept.name}
             <button type="button" onClick={() => removeDepartment(dept.id)}>
               Remove
             </button>
           </legend>
 
-          <label style={{ display: 'block' }}>
+          <label>
             Rating:{' '}
             <input
               type="number"
@@ -583,70 +743,41 @@ function DepartmentEditor({ departments, onChange }) {
             />
           </label>
 
-          <div style={{ marginTop: 8 }}>
-            <input
-              value={dept.notes || ''}
-              onChange={(e) => updateDeptNotes(dept.id, e.target.value)}
-              placeholder="Department notes / keywords (e.g. pants, workwear)"
-              list="common-note-suggestions"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-            />
-          </div>
-
           {safeArray(dept.subDepartments).map((sub) => (
             <div
               key={sub.id}
               style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                gap: '8px',
+                alignItems: 'center',
                 marginLeft: '12px',
-                marginTop: '10px',
-                paddingTop: '8px',
-                borderTop: '1px solid rgba(0,0,0,0.08)',
+                marginTop: '8px',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
               }}
             >
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-                  gap: '8px',
-                  alignItems: 'center',
-                  maxWidth: '100%',
-                  boxSizing: 'border-box',
-                }}
+              <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                {sub.name}
+              </span>
+
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={sub.rating}
+                onChange={(e) =>
+                  updateSubRating(dept.id, sub.id, e.target.value)
+                }
+                style={{ width: '60px' }}
+              />
+
+              <button
+                type="button"
+                onClick={() => removeSubDepartment(dept.id, sub.id)}
               >
-                <strong style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-                  {sub.name}
-                </strong>
-
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={sub.rating}
-                  onChange={(e) =>
-                    updateSubRating(dept.id, sub.id, e.target.value)
-                  }
-                  style={{ width: '60px' }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => removeSubDepartment(dept.id, sub.id)}
-                >
-                  Remove
-                </button>
-              </div>
-
-              <div style={{ marginTop: 6 }}>
-                <input
-                  value={sub.notes || ''}
-                  onChange={(e) =>
-                    updateSubNotes(dept.id, sub.id, e.target.value)
-                  }
-                  placeholder="Subcategory notes / keywords"
-                  list="common-note-suggestions"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
+                Remove
+              </button>
             </div>
           ))}
 
@@ -665,10 +796,6 @@ function DepartmentEditor({ departments, onChange }) {
               marginTop: '10px',
             }}
           />
-
-          <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
-            Suggestions: {COMMON_NOTE_SUGGESTIONS.slice(0, 12).join(', ')}
-          </div>
         </fieldset>
       ))}
     </div>
@@ -765,85 +892,103 @@ function OptionsMenu({ onEdit, onDelete }) {
 // ---------------- RECOMMENDATION ENGINE ----------------
 
 function scoreStore(store, query) {
-  const q = String(query || '').trim()
-  const queryTokens = tokenize(q)
-
-  if (!q || !queryTokens.length) {
-    return {
-      score: 0,
-      reasons: [],
-      matchedDepartments: 0,
-      matchedSubDepartments: 0,
-    }
-  }
-
+  const profile = buildQueryProfile(query)
   let score = 0
   const reasons = []
+
   const addReason = (label) => {
-    if (label && !reasons.includes(label)) reasons.push(label)
+    if (!label) return
+    if (!reasons.includes(label)) reasons.push(label)
   }
 
-  // Store name
-  const storeNameScore = scoreField(store.name, { raw: normalizeText(q), tokens: queryTokens }, 5)
-  if (storeNameScore.score > 0) {
-    score += storeNameScore.score
+  // Store name should matter a bit, especially if users name stores descriptively.
+  const storeNameOverlap = tokenOverlapScore(store.name, profile)
+  if (containsLooseMatch(store.name, profile)) {
+    score += 12
     addReason('store name')
+  }
+  if (storeNameOverlap > 0) {
+    score += storeNameOverlap * 2
+  }
+
+  // Address is a weak signal; keep it small.
+  if (containsLooseMatch(store.address, profile)) {
+    score += 2
+    addReason('address')
   }
 
   const departments = safeArray(store.departments)
   let matchedDepartments = 0
   let matchedSubDepartments = 0
+  let ratingBoost = 0
 
   for (const dept of departments) {
-    const deptNameScore = scoreField(
-      dept.name,
-      { raw: normalizeText(q), tokens: queryTokens },
-      4
-    )
-    const deptNotesScore = scoreField(
-      dept.notes || '',
-      { raw: normalizeText(q), tokens: queryTokens },
-      3
-    )
+    const deptRating = Number(dept.rating) || 0
+    const deptKey = resolveCategoryKey(dept.name)
+    const deptHintHit = deptKey && profile.categoryHints.has(deptKey)
 
-    let deptScore = deptNameScore.score + deptNotesScore.score
+    let deptScore = 0
 
-    if (deptScore > 0) {
-      matchedDepartments += 1
-      score += deptScore
-      score += (Number(dept.rating) || 0) * 1.5
+    if (containsLooseMatch(dept.name, profile)) {
+      deptScore += 10
       addReason(dept.name)
-      if (dept.notes?.trim()) addReason(`${dept.name} notes`)
     }
 
-    for (const sub of safeArray(dept.subDepartments)) {
-      const subNameScore = scoreField(
-        sub.name,
-        { raw: normalizeText(q), tokens: queryTokens },
-        4.5
-      )
-      const subNotesScore = scoreField(
-        sub.notes || '',
-        { raw: normalizeText(q), tokens: queryTokens },
-        3
-      )
+    const deptOverlap = tokenOverlapScore(dept.name, profile)
+    deptScore += deptOverlap * 3
 
-      const subScore = subNameScore.score + subNotesScore.score
+    if (deptHintHit) {
+      deptScore += 16
+      addReason(dept.name)
+    }
+
+    deptScore += deptRating * 1.75
+
+    const subDepartments = safeArray(dept.subDepartments)
+
+    for (const sub of subDepartments) {
+      const subRating = Number(sub.rating) || 0
+      let subScore = 0
+
+      if (containsLooseMatch(sub.name, profile)) {
+        subScore += 8
+        addReason(sub.name)
+      }
+
+      const subOverlap = tokenOverlapScore(sub.name, profile)
+      subScore += subOverlap * 4
+
+      if (deptHintHit) {
+        subScore += 8
+      }
+
+      subScore += subRating * 2
 
       if (subScore > 0) {
         matchedSubDepartments += 1
         score += subScore
-        score += (Number(sub.rating) || 0) * 1.25
         addReason(`${dept.name} → ${sub.name}`)
-        if (sub.notes?.trim()) addReason(`${sub.name} notes`)
       }
+    }
+
+    if (deptScore > 0) {
+      matchedDepartments += 1
+      score += deptScore
+      ratingBoost += deptRating
+      addReason(dept.name)
     }
   }
 
-  // small breadth bonus only when there is real overlap
-  if (matchedDepartments > 0 || matchedSubDepartments > 0 || storeNameScore.score > 0) {
-    score += matchedDepartments * 1.5
-    score += matchedSubDepartments * 1
+  // Breadth bonus: stores with multiple relevant departments rank higher.
+  score += matchedDepartments * 2.5
+  score += matchedSubDepartments * 1.25
+
+  // Small boost for overall store quality if it has decent ratings in matched sections.
+  score += ratingBoost * 0.4
+
+  // Keep score from being too flat by adding a tiny density factor.
+  if (matchedDepartments > 0 || matchedSubDepartments > 0) {
+    score += Math.min(6, departments.length * 0.25)
   }
 
   return {
@@ -861,7 +1006,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem('stores')
       const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed.map(normalizeStoreRecord) : []
+      return Array.isArray(parsed) ? parsed : []
     } catch {
       return []
     }
@@ -893,7 +1038,7 @@ export default function App() {
         const scored = scoreStore(store, trimmed)
         return { ...store, ...scored }
       })
-      .filter((s) => s.score > 0.5)
+      .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
 
@@ -905,7 +1050,9 @@ export default function App() {
   const geocode = async (addr) => {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          addr
+        )}`
       )
       const data = await res.json()
       if (!data.length) return null
@@ -936,8 +1083,8 @@ export default function App() {
       return
     }
 
-    setStores((prev) => [
-      ...prev,
+    setStores([
+      ...stores,
       {
         id: Date.now(),
         name: createForm.storeName,
@@ -959,14 +1106,7 @@ export default function App() {
       storeName: store.name,
       address: store.address,
       coords: { lat: store.lat, lng: store.lng },
-      departments: safeArray(store.departments).map((dept) => ({
-        ...dept,
-        notes: dept.notes || '',
-        subDepartments: safeArray(dept.subDepartments).map((sub) => ({
-          ...sub,
-          notes: sub.notes || '',
-        })),
-      })),
+      departments: store.departments,
     })
   }
 
@@ -990,8 +1130,8 @@ export default function App() {
       return
     }
 
-    setStores((prev) =>
-      prev.map((s) =>
+    setStores(
+      stores.map((s) =>
         s.id === editId
           ? {
               ...s,
@@ -1010,7 +1150,7 @@ export default function App() {
   }
 
   const deleteStore = (id) => {
-    setStores((prev) => prev.filter((s) => s.id !== id))
+    setStores(stores.filter((s) => s.id !== id))
     if (editId === id) {
       cancelEdit()
     }
@@ -1028,12 +1168,6 @@ export default function App() {
       <h1>Thrifter Sifter</h1>
 
       <MapView stores={stores} onPickLocation={handleMapPick} />
-
-      <datalist id="common-note-suggestions">
-        {COMMON_NOTE_SUGGESTIONS.map((item) => (
-          <option key={item} value={item} />
-        ))}
-      </datalist>
 
       {/* SEARCH */}
       <div style={{ margin: '10px 0 20px' }}>
@@ -1195,9 +1329,7 @@ export default function App() {
             color: '#0a1f3c',
           }}
         >
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
             <strong style={{ color: '#0a1f3c' }}>{store.name}</strong>
 
             <OptionsMenu
