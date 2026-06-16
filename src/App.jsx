@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 import 'leaflet/dist/leaflet.css'
@@ -408,49 +408,78 @@ const APP_STYLES = {
   muted: {
     color: 'rgba(255,255,255,0.72)',
   },
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    borderRadius: '999px',
+    padding: '7px 10px',
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#ffffff',
+    fontSize: '0.86rem',
+    fontWeight: 700,
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+  },
+  badgeStrong: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    borderRadius: '999px',
+    padding: '7px 10px',
+    background: '#ffffff',
+    color: '#071427',
+    fontSize: '0.86rem',
+    fontWeight: 800,
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+  },
 }
 
 const layoutCSS = `
-  .app-shell .form-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 16px;
-    align-items: start;
+  .app-shell .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  .app-shell .stack-gap {
+  .app-shell .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .app-shell .burger-button {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    width: 48px;
+    height: 48px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .app-shell .header-copy {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 4px;
+    min-width: 0;
   }
 
-  .app-shell .toolbar-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
-    max-width: 100%;
-    box-sizing: border-box;
+  .app-shell .header-copy h1 {
+    margin: 0;
   }
 
-  .app-shell .dept-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
-    align-items: center;
-    margin-left: 12px;
-    margin-top: 8px;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  .app-shell .top-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: space-between;
+  .app-shell .header-copy p {
+    margin: 0;
   }
 
   .app-shell .search-list {
@@ -474,6 +503,48 @@ const layoutCSS = `
   .app-shell .map-shell .leaflet-container {
     height: 100%;
     width: 100%;
+  }
+
+  .app-shell .form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .app-shell .stack-gap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .app-shell .top-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-shell .dept-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-left: 12px;
+    margin-top: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-shell .toolbar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .app-shell fieldset.dept-fieldset {
@@ -537,6 +608,117 @@ const layoutCSS = `
     border-radius: 12px;
   }
 
+  .app-shell .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  .app-shell .drawer-panel {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 41;
+    width: min(430px, 90vw);
+    height: 100vh;
+    overflow-y: auto;
+    background: rgba(7, 18, 34, 0.98);
+    border-right: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 18px 0 40px rgba(0,0,0,0.38);
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .app-shell .drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .app-shell .drawer-header h2 {
+    margin: 0;
+  }
+
+  .app-shell .drawer-header p {
+    margin: 4px 0 0;
+  }
+
+  .app-shell .location-picker {
+    position: relative;
+  }
+
+  .app-shell .location-suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 12;
+    background: rgba(7,18,34,0.98);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .app-shell .location-suggestion {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    color: white;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+
+  .app-shell .location-suggestion:hover {
+    background: rgba(255,255,255,0.07);
+  }
+
+  .app-shell .location-suggestion small {
+    display: block;
+    opacity: 0.74;
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .app-shell .location-note {
+    margin-top: 8px;
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.74);
+  }
+
+  .app-shell .score-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .app-shell .store-card-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .app-shell .store-card-title {
+    color: #ffffff;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .app-shell .store-card-meta {
+    margin-top: 8px;
+    color: rgba(255,255,255,0.88);
+  }
+
   @media (max-width: 768px) {
     .app-shell {
       padding: 12px;
@@ -576,6 +758,10 @@ const layoutCSS = `
       min-height: 38px;
       padding: 7px 10px !important;
       font-size: 0.92rem;
+    }
+
+    .app-shell .drawer-panel {
+      width: min(92vw, 430px);
     }
   }
 `
@@ -719,11 +905,7 @@ function resolveCategoryKey(label) {
   const normalized = normalizeText(label)
 
   for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
-    if (
-      aliases.some(
-        (alias) => normalized === alias || normalized.includes(alias)
-      )
-    ) {
+    if (aliases.some((alias) => normalized === alias || normalized.includes(alias))) {
       return categoryKey
     }
   }
@@ -733,16 +915,13 @@ function resolveCategoryKey(label) {
 
 function shortenAddress(address) {
   if (!address) return ''
-  const parts = address.split(',').map((p) => p.trim())
+  const parts = String(address).split(',').map((p) => p.trim())
   if (parts.length <= 2) return address
 
   const street =
-    parts[0].match(/^\d+$/) && parts[1]
-      ? `${parts[0]} ${parts[1]}`
-      : parts[0]
+    parts[0].match(/^\d+$/) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
 
-  const city =
-    parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
+  const city = parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
 
   return city ? `${street}, ${city}` : street
 }
@@ -760,6 +939,147 @@ function makeEmptyForm() {
   }
 }
 
+function calculateStoreSerendipity(store) {
+  const departments = safeArray(store.departments)
+  const allRatings = []
+
+  for (const dept of departments) {
+    const deptRating = Number(dept.rating)
+    if (Number.isFinite(deptRating)) allRatings.push(deptRating)
+
+    for (const sub of safeArray(dept.subDepartments)) {
+      const subRating = Number(sub.rating)
+      if (Number.isFinite(subRating)) allRatings.push(subRating)
+    }
+  }
+
+  if (allRatings.length === 0) return 0
+
+  const avg = allRatings.reduce((sum, n) => sum + n, 0) / allRatings.length
+  const breadthBonus = Math.min(15, departments.length * 2 + Math.max(0, allRatings.length - 1) * 0.45)
+  const normalized = (avg / 5) * 85 + breadthBonus
+
+  return Math.max(0, Math.min(100, Number(normalized.toFixed(1))))
+}
+
+// ---------------- LOCATION PICKER ----------------
+
+function LocationPicker({ value, coords, onChange, placeholder = 'Search a location or address...' }) {
+  const [query, setQuery] = useState(value || '')
+  const [suggestions, setSuggestions] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setQuery(value || '')
+  }, [value])
+
+  useEffect(() => {
+    const trimmed = query.trim()
+
+    if (!trimmed) {
+      setSuggestions([])
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timeout = setTimeout(async () => {
+      if (trimmed.length < 3) {
+        setSuggestions([])
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=${encodeURIComponent(trimmed)}`
+        )
+        const data = await res.json()
+
+        if (!cancelled) {
+          setSuggestions(Array.isArray(data) ? data.slice(0, 5) : [])
+        }
+      } catch {
+        if (!cancelled) {
+          setSuggestions([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [query])
+
+  const selectSuggestion = (item) => {
+    const lat = parseFloat(item.lat)
+    const lng = parseFloat(item.lon)
+
+    setQuery(item.display_name)
+    setSuggestions([])
+    onChange({
+      address: item.display_name,
+      coords: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null,
+    })
+  }
+
+  return (
+    <div className="location-picker">
+      <input
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => {
+          const nextValue = e.target.value
+          setQuery(nextValue)
+          onChange({
+            address: nextValue,
+            coords: null,
+          })
+        }}
+        style={APP_STYLES.input}
+      />
+
+      {coords && (
+        <div className="location-note">
+          Location pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+        </div>
+      )}
+
+      {loading && <div className="location-note">Searching locations…</div>}
+
+      {query.trim().length >= 3 && suggestions.length > 0 && (
+        <div className="location-suggestions">
+          {suggestions.map((item) => (
+            <button
+              key={`${item.place_id}-${item.display_name}`}
+              type="button"
+              className="location-suggestion"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => selectSuggestion(item)}
+            >
+              <strong>{item.display_name.split(',')[0]}</strong>
+              <small>{item.display_name}</small>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {query.trim().length >= 3 && !loading && suggestions.length === 0 && (
+        <div className="location-note">
+          No suggestions yet. You can still submit and it will try to geocode the text.
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---------------- MAP CLICK ----------------
 
 function MapClickHandler({ onSelect }) {
@@ -769,7 +1089,7 @@ function MapClickHandler({ onSelect }) {
 
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
         )
         const data = await res.json()
 
@@ -895,8 +1215,7 @@ function DepartmentEditor({ departments, onChange }) {
 
   const update = (next) => onChange(next)
 
-  const removeDepartment = (id) =>
-    update(departments.filter((d) => d.id !== id))
+  const removeDepartment = (id) => update(departments.filter((d) => d.id !== id))
 
   const updateDeptRating = (id, rating) =>
     update(
@@ -932,9 +1251,7 @@ function DepartmentEditor({ departments, onChange }) {
         d.id === deptId
           ? {
               ...d,
-              subDepartments: safeArray(d.subDepartments).filter(
-                (s) => s.id !== subId
-              ),
+              subDepartments: safeArray(d.subDepartments).filter((s) => s.id !== subId),
             }
           : d
       )
@@ -998,7 +1315,11 @@ function DepartmentEditor({ departments, onChange }) {
         <fieldset key={dept.id} className="dept-fieldset">
           <legend>
             <span>{dept.name}</span>
-            <button type="button" onClick={() => removeDepartment(dept.id)} style={APP_STYLES.buttonSecondary}>
+            <button
+              type="button"
+              onClick={() => removeDepartment(dept.id)}
+              style={APP_STYLES.buttonSecondary}
+            >
               Remove
             </button>
           </legend>
@@ -1037,9 +1358,7 @@ function DepartmentEditor({ departments, onChange }) {
                 min="1"
                 max="5"
                 value={sub.rating}
-                onChange={(e) =>
-                  updateSubRating(dept.id, sub.id, e.target.value)
-                }
+                onChange={(e) => updateSubRating(dept.id, sub.id, e.target.value)}
                 style={{
                   width: '72px',
                   ...APP_STYLES.input,
@@ -1158,7 +1477,7 @@ function serendipityScoreStore(store, query) {
 
   if (containsLooseMatch(store.address, profile)) {
     serendipityScore += 2
-    addReason('address')
+    addReason('location')
   }
 
   const departments = safeArray(store.departments)
@@ -1239,6 +1558,90 @@ function serendipityScoreStore(store, query) {
   }
 }
 
+// ---------------- FORM PANEL ----------------
+
+function StoreFormPanel({
+  title,
+  submitLabel,
+  form,
+  setForm,
+  onSubmit,
+  onCancel,
+}) {
+  return (
+    <form onSubmit={onSubmit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+      <div className="top-actions" style={{ marginBottom: 12 }}>
+        <div>
+          <h2 style={APP_STYLES.sectionTitle}>{title}</h2>
+          <div style={APP_STYLES.muted}>Use the location picker or click the map.</div>
+        </div>
+
+        <button type="button" onClick={onCancel} style={APP_STYLES.buttonSecondary}>
+          Cancel
+        </button>
+      </div>
+
+      <div className="form-grid">
+        <div className="stack-gap">
+          <input
+            placeholder="Store name"
+            value={form.storeName}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                storeName: e.target.value,
+              }))
+            }
+            style={APP_STYLES.input}
+          />
+
+          <LocationPicker
+            value={form.address}
+            coords={form.coords}
+            onChange={(next) =>
+              setForm((prev) => ({
+                ...prev,
+                address: next.address,
+                coords: next.coords,
+              }))
+            }
+          />
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button type="submit" style={APP_STYLES.buttonPrimary}>
+              {submitLabel}
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  address: '',
+                  coords: null,
+                }))
+              }
+              style={APP_STYLES.buttonSecondary}
+            >
+              Clear Location
+            </button>
+          </div>
+        </div>
+
+        <DepartmentEditor
+          departments={form.departments}
+          onChange={(departments) =>
+            setForm((prev) => ({
+              ...prev,
+              departments,
+            }))
+          }
+        />
+      </div>
+    </form>
+  )
+}
+
 // ---------------- MAIN APP ----------------
 
 export default function App() {
@@ -1252,6 +1655,7 @@ export default function App() {
     }
   })
 
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createForm, setCreateForm] = useState(makeEmptyForm())
 
@@ -1259,7 +1663,6 @@ export default function App() {
   const [editForm, setEditForm] = useState(makeEmptyForm())
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
-  const [showStores, setShowStores] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -1278,11 +1681,23 @@ export default function App() {
 
     const results = stores
       .map((store) => {
-        const scored = serendipityScoreStore(store, trimmed)
-        return { ...store, ...scored }
+        const searchScored = serendipityScoreStore(store, trimmed)
+        const storeSerendipityScore = calculateStoreSerendipity(store)
+
+        return {
+          ...store,
+          ...searchScored,
+          storeSerendipityScore,
+        }
       })
       .filter((s) => s.serendipityScore > 0)
-      .sort((a, b) => b.serendipityScore - a.serendipityScore)
+      .sort((a, b) => {
+        if (b.serendipityScore !== a.serendipityScore) {
+          return b.serendipityScore - a.serendipityScore
+        }
+
+        return b.storeSerendipityScore - a.storeSerendipityScore
+      })
       .slice(0, 3)
 
     setSearchResults(results)
@@ -1291,16 +1706,15 @@ export default function App() {
   const geocode = async (addr) => {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          addr
-        )}`
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=${encodeURIComponent(addr)}`
       )
       const data = await res.json()
-      if (!data.length) return null
+      if (!Array.isArray(data) || data.length === 0) return null
 
       return {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon),
+        address: data[0].display_name || addr,
       }
     } catch {
       return null
@@ -1320,19 +1734,27 @@ export default function App() {
     }
 
     let coords = createForm.coords
-    if (!coords) coords = await geocode(createForm.address)
+    let address = createForm.address
+
+    if (!coords) {
+      const geo = await geocode(createForm.address)
+      if (geo) {
+        coords = { lat: geo.lat, lng: geo.lng }
+        address = geo.address || createForm.address
+      }
+    }
 
     if (!coords) {
       alert('No location found')
       return
     }
 
-    setStores([
-      ...stores,
+    setStores((prev) => [
+      ...prev,
       {
-        id: Date.now(),
+        id: makeId(),
         name: createForm.storeName,
-        address: createForm.address,
+        address,
         lat: coords.lat,
         lng: coords.lng,
         departments: createForm.departments,
@@ -1340,13 +1762,14 @@ export default function App() {
     ])
 
     resetCreate()
-    setShowStores(true)
+    setDrawerOpen(false)
   }
 
   const startEdit = (store) => {
     setEditId(store.id)
     setShowCreateForm(false)
-    setShowStores(true)
+    setDrawerOpen(false)
+    setExpandedStoreId(null)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -1368,20 +1791,28 @@ export default function App() {
     }
 
     let coords = editForm.coords
-    if (!coords) coords = await geocode(editForm.address)
+    let address = editForm.address
+
+    if (!coords) {
+      const geo = await geocode(editForm.address)
+      if (geo) {
+        coords = { lat: geo.lat, lng: geo.lng }
+        address = geo.address || editForm.address
+      }
+    }
 
     if (!coords) {
       alert('No location found')
       return
     }
 
-    setStores(
-      stores.map((s) =>
+    setStores((prev) =>
+      prev.map((s) =>
         s.id === editId
           ? {
               ...s,
               name: editForm.storeName,
-              address: editForm.address,
+              address,
               lat: coords.lat,
               lng: coords.lng,
               departments: editForm.departments,
@@ -1395,7 +1826,7 @@ export default function App() {
   }
 
   const deleteStore = (id) => {
-    setStores(stores.filter((s) => s.id !== id))
+    setStores((prev) => prev.filter((s) => s.id !== id))
     if (editId === id) {
       cancelEdit()
     }
@@ -1403,12 +1834,12 @@ export default function App() {
 
   const handleMapPick = ({ lat, lng, address }) => {
     if (editId) {
-      setEditForm((p) => ({ ...p, address, coords: { lat, lng } }))
+      setEditForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
       return
     }
 
     if (showCreateForm) {
-      setCreateForm((p) => ({ ...p, address, coords: { lat, lng } }))
+      setCreateForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
     }
   }
 
@@ -1418,10 +1849,36 @@ export default function App() {
 
       <div style={APP_STYLES.container}>
         <div style={APP_STYLES.headerRow}>
-          <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
-          <p style={APP_STYLES.subtitle}>
-            Search above the map, create stores, then reveal saved stores when you need them.
-          </p>
+          <div className="header-bar">
+            <div className="header-brand">
+              <button
+                type="button"
+                className="burger-button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open saved stores menu"
+              >
+                ☰
+              </button>
+
+              <div className="header-copy">
+                <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
+                <p style={APP_STYLES.subtitle}>
+                  Search above the map, then use the burger menu for saved stores.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (editId) cancelEdit()
+                setShowCreateForm((v) => !v)
+              }}
+              style={APP_STYLES.buttonPrimary}
+            >
+              {showCreateForm ? 'Close Create' : 'Create Store'}
+            </button>
+          </div>
         </div>
 
         {/* SEARCH */}
@@ -1447,23 +1904,22 @@ export default function App() {
 
               {searchResults.map((s) => (
                 <div key={s.id} style={APP_STYLES.darkCard}>
-                  <strong
-                    style={{
-                      color: '#ffffff',
-                      fontSize: '1.02rem',
-                      display: 'block',
-                      marginBottom: 4,
-                    }}
-                  >
-                    {s.name}
-                  </strong>
+                  <div className="store-card-head">
+                    <strong className="store-card-title">{s.name}</strong>
 
-                  <div style={{ color: '#ffffff', opacity: 0.88 }}>
+                    <span style={APP_STYLES.badgeStrong}>
+                      Search {s.serendipityScore.toFixed(1)}
+                    </span>
+                  </div>
+
+                  <div style={{ color: '#ffffff', opacity: 0.88, marginTop: 6 }}>
                     {shortenAddress(s.address)}
                   </div>
 
-                  <div style={{ color: '#ffffff', marginTop: 6 }}>
-                    Serendipity Score: {s.serendipityScore.toFixed(1)}
+                  <div className="score-row">
+                    <span style={APP_STYLES.badge}>
+                      Store score {s.storeSerendipityScore.toFixed(0)}/100
+                    </span>
                   </div>
 
                   {s.reasons?.length > 0 && (
@@ -1487,272 +1943,132 @@ export default function App() {
         {/* MAP */}
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {/* ADD / EDIT ACTIONS */}
-        {!editId && !showCreateForm && (
-          <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
-            <div className="top-actions">
-              <div>
-                <h2 style={APP_STYLES.sectionTitle}>Add a store</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEditId(null)
-                  setShowCreateForm(true)
-                }}
-                style={APP_STYLES.buttonPrimary}
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* CREATE */}
         {!editId && showCreateForm && (
-          <form onSubmit={addStore} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
-            <div className="top-actions" style={{ marginBottom: 12 }}>
-              <div>
-                <h2 style={APP_STYLES.sectionTitle}>Add Store</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={resetCreate}
-                style={APP_STYLES.buttonSecondary}
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="form-grid">
-              <div className="stack-gap">
-                <input
-                  placeholder="Store name"
-                  value={createForm.storeName}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, storeName: e.target.value })
-                  }
-                  style={APP_STYLES.input}
-                />
-
-                <input
-                  placeholder="Address"
-                  value={createForm.address}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      address: e.target.value,
-                      coords: null,
-                    })
-                  }
-                  style={APP_STYLES.input}
-                />
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button type="submit" style={APP_STYLES.buttonPrimary}>
-                    Finish
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCreateForm({
-                        ...createForm,
-                        address: '',
-                        coords: null,
-                      })
-                    }
-                    style={APP_STYLES.buttonSecondary}
-                  >
-                    Clear Address
-                  </button>
-                </div>
-              </div>
-
-              <DepartmentEditor
-                departments={createForm.departments}
-                onChange={(departments) =>
-                  setCreateForm({ ...createForm, departments })
-                }
-              />
-            </div>
-          </form>
+          <StoreFormPanel
+            title="Create Store"
+            submitLabel="Create"
+            form={createForm}
+            setForm={setCreateForm}
+            onSubmit={addStore}
+            onCancel={resetCreate}
+          />
         )}
 
         {/* EDIT */}
         {editId && (
-          <form onSubmit={saveEdit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
-            <div className="top-actions" style={{ marginBottom: 12 }}>
-              <div>
-                <h2 style={APP_STYLES.sectionTitle}>Edit Store</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={cancelEdit}
-                style={APP_STYLES.buttonSecondary}
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="form-grid">
-              <div className="stack-gap">
-                <input
-                  placeholder="Store name"
-                  value={editForm.storeName}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, storeName: e.target.value })
-                  }
-                  style={APP_STYLES.input}
-                />
-
-                <input
-                  placeholder="Address"
-                  value={editForm.address}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      address: e.target.value,
-                      coords: null,
-                    })
-                  }
-                  style={APP_STYLES.input}
-                />
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button type="submit" style={APP_STYLES.buttonPrimary}>
-                    Finish
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    style={APP_STYLES.buttonSecondary}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-
-              <DepartmentEditor
-                departments={editForm.departments}
-                onChange={(departments) =>
-                  setEditForm({ ...editForm, departments })
-                }
-              />
-            </div>
-          </form>
+          <StoreFormPanel
+            title="Edit Store"
+            submitLabel="Save Changes"
+            form={editForm}
+            setForm={setEditForm}
+            onSubmit={saveEdit}
+            onCancel={cancelEdit}
+          />
         )}
 
-        {/* STORES COLLAPSIBLE */}
-        <div style={APP_STYLES.panel}>
-          <div className="top-actions">
-            <div>
-              <h2 style={APP_STYLES.sectionTitle}>Saved Stores</h2>
-              <div style={APP_STYLES.muted}>
-                Click to show or hide the stores you have already created.
+        {/* DRAWER */}
+        {drawerOpen && (
+          <>
+            <div
+              className="drawer-overlay"
+              onClick={() => setDrawerOpen(false)}
+            />
+
+            <aside className="drawer-panel">
+              <div className="drawer-header">
+                <div>
+                  <h2 style={APP_STYLES.sectionTitle}>Saved Stores</h2>
+                  <p style={APP_STYLES.muted}>
+                    {stores.length} saved {stores.length === 1 ? 'store' : 'stores'}.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(false)}
+                  style={APP_STYLES.buttonSecondary}
+                >
+                  Close
+                </button>
               </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={() => setShowStores((v) => !v)}
-              style={APP_STYLES.buttonSecondary}
-            >
-              {showStores ? 'Hide Stores' : `Show Stores (${stores.length})`}
-            </button>
-          </div>
+              <div className="store-list">
+                {stores.length === 0 && (
+                  <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
+                    No stores yet. Use Create Store to add one.
+                  </p>
+                )}
 
-          {showStores && (
-            <div style={{ marginTop: 14 }} className="store-list">
-              {stores.length === 0 && (
-                <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
-                  No stores yet.
-                </p>
-              )}
+                {stores.map((store) => {
+                  const isOpen = expandedStoreId === store.id
+                  const storeSerendipityScore = calculateStoreSerendipity(store)
 
-              {stores.map((store) => {
-                const isOpen = expandedStoreId === store.id
-
-                return (
-                  <div
-                    key={store.id}
-                    style={{
-                      ...APP_STYLES.darkCard,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() =>
-                      setExpandedStoreId(isOpen ? null : store.id)
-                    }
-                  >
+                  return (
                     <div
+                      key={store.id}
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                        alignItems: 'flex-start',
+                        ...APP_STYLES.darkCard,
+                        cursor: 'pointer',
                       }}
+                      onClick={() =>
+                        setExpandedStoreId(isOpen ? null : store.id)
+                      }
                     >
-                      <strong
-                        style={{
-                          color: '#ffffff',
-                          fontSize: '1.05rem',
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {store.name}
-                      </strong>
+                      <div className="store-card-head">
+                        <strong className="store-card-title">{store.name}</strong>
 
-                      <span style={{ color: '#ffffff', opacity: 0.8 }}>
-                        {isOpen ? '▲' : '▼'}
-                      </span>
-                    </div>
+                        <span style={APP_STYLES.badgeStrong}>
+                          {storeSerendipityScore.toFixed(0)}/100
+                        </span>
+                      </div>
 
-                    <p
-                      style={{
-                        marginBottom: 0,
-                        color: '#ffffff',
-                        opacity: 0.88,
-                        marginTop: 8,
-                      }}
-                    >
-                      {shortenAddress(store.address)}
-                    </p>
+                      <p className="store-card-meta">{shortenAddress(store.address)}</p>
 
-                    {isOpen && (
-                      <div style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+                      <div className="score-row">
+                        <span style={APP_STYLES.badge}>
+                          Store Serendipity
+                        </span>
+                        <span style={APP_STYLES.badge}>
+                          {safeArray(store.departments).length} departments
+                        </span>
+                      </div>
+
+                      {isOpen && (
                         <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            gap: 10,
-                            alignItems: 'center',
-                            marginBottom: 10,
-                            flexWrap: 'wrap',
-                          }}
+                          style={{ marginTop: 12 }}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <div style={{ color: '#ffffff', fontWeight: 700 }}>
-                            Store details
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              gap: 10,
+                              alignItems: 'center',
+                              marginBottom: 10,
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <div style={{ color: '#ffffff', fontWeight: 700 }}>
+                              Store details
+                            </div>
+
+                            <OptionsMenu
+                              onEdit={() => startEdit(store)}
+                              onDelete={() => deleteStore(store.id)}
+                            />
                           </div>
 
-                          <OptionsMenu
-                            onEdit={() => startEdit(store)}
-                            onDelete={() => deleteStore(store.id)}
-                          />
+                          <StoreDepartmentsDisplay departments={store.departments} />
                         </div>
-
-                        <StoreDepartmentsDisplay departments={store.departments} />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </aside>
+          </>
+        )}
       </div>
     </div>
   )
