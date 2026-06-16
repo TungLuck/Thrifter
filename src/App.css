@@ -1,1767 +1,199 @@
-import { useEffect, useState } from 'react'
-import './App.css'
-
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
-
-// ---------------- LEAFLET ICON FIX ----------------
-
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-
-if (L.Icon.Default && !L.Icon.Default._patched) {
-  delete L.Icon.Default.prototype._getIconUrl
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x,
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-  })
-  L.Icon.Default._patched = true
+* {
+  box-sizing: border-box;
 }
 
-// ---------------- CONSTANTS ----------------
-
-const PRESET_DEPARTMENTS = [
-  'Clothing',
-  'Shoes',
-  'Furniture',
-  'Electronics',
-  'Books',
-  'Toys',
-  'Housewares',
-  'Media (DVDs/CDs/Records)',
-]
-
-const EMPTY_FORM = {
-  storeName: '',
-  address: '',
-  departments: [],
-  coords: null,
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
-const STOP_WORDS = new Set([
-  'a',
-  'an',
-  'and',
-  'any',
-  'at',
-  'best',
-  'by',
-  'for',
-  'from',
-  'find',
-  'get',
-  'good',
-  'in',
-  'into',
-  'item',
-  'items',
-  'looking',
-  'me',
-  'near',
-  'of',
-  'on',
-  'or',
-  'please',
-  'search',
-  'show',
-  'the',
-  'to',
-  'want',
-  'with',
-])
-
-const CATEGORY_HINTS = {
-  clothing: [
-    'clothing',
-    'clothes',
-    'apparel',
-    'fashion',
-    'shirt',
-    'shirts',
-    'tee',
-    'tees',
-    'tshirt',
-    'tshirts',
-    't-shirt',
-    't-shirts',
-    'top',
-    'tops',
-    'blouse',
-    'blouses',
-    'sweater',
-    'sweaters',
-    'hoodie',
-    'hoodies',
-    'jacket',
-    'jackets',
-    'coat',
-    'coats',
-    'jean',
-    'jeans',
-    'denim',
-    'pants',
-    'trouser',
-    'trousers',
-    'shorts',
-    'dress',
-    'dresses',
-    'skirt',
-    'skirts',
-    'suit',
-    'suits',
-  ],
-  shoes: [
-    'shoes',
-    'shoe',
-    'footwear',
-    'sneaker',
-    'sneakers',
-    'boot',
-    'boots',
-    'sandals',
-    'sandal',
-    'heel',
-    'heels',
-    'loafer',
-    'loafers',
-    'slipper',
-    'slippers',
-    'cleat',
-    'cleats',
-  ],
-  furniture: [
-    'furniture',
-    'chair',
-    'chairs',
-    'table',
-    'tables',
-    'desk',
-    'desks',
-    'couch',
-    'couches',
-    'sofa',
-    'sofas',
-    'loveseat',
-    'loveseats',
-    'bed',
-    'beds',
-    'mattress',
-    'mattresses',
-    'dresser',
-    'dressers',
-    'nightstand',
-    'nightstands',
-    'shelf',
-    'shelves',
-    'cabinet',
-    'cabinets',
-    'bookcase',
-    'bookcases',
-    'stool',
-    'stools',
-    'bench',
-    'benches',
-  ],
-  electronics: [
-    'electronics',
-    'electronic',
-    'tv',
-    'tvs',
-    'television',
-    'televisions',
-    'computer',
-    'computers',
-    'laptop',
-    'laptops',
-    'phone',
-    'phones',
-    'tablet',
-    'tablets',
-    'monitor',
-    'monitors',
-    'speaker',
-    'speakers',
-    'headphone',
-    'headphones',
-    'console',
-    'consoles',
-    'game',
-    'games',
-    'camera',
-    'cameras',
-    'printer',
-    'printers',
-    'charger',
-    'chargers',
-    'cable',
-    'cables',
-  ],
-  books: [
-    'books',
-    'book',
-    'novel',
-    'novels',
-    'paperback',
-    'paperbacks',
-    'hardcover',
-    'hardcovers',
-    'magazine',
-    'magazines',
-    'comic',
-    'comics',
-    'textbook',
-    'textbooks',
-    'cookbook',
-    'cookbooks',
-    'reader',
-    'readers',
-  ],
-  toys: [
-    'toys',
-    'toy',
-    'lego',
-    'legos',
-    'puzzle',
-    'puzzles',
-    'doll',
-    'dolls',
-    'figure',
-    'figures',
-    'plush',
-    'stuffed',
-    'game',
-    'games',
-    'playset',
-    'playsets',
-  ],
-  housewares: [
-    'housewares',
-    'houseware',
-    'kitchen',
-    'kitchenware',
-    'dish',
-    'dishes',
-    'plate',
-    'plates',
-    'bowl',
-    'bowls',
-    'pan',
-    'pans',
-    'pot',
-    'pots',
-    'mug',
-    'mugs',
-    'glass',
-    'glasses',
-    'lamp',
-    'lamps',
-    'decor',
-    'decoration',
-    'blanket',
-    'blankets',
-    'pillow',
-    'pillows',
-    'rug',
-    'rugs',
-    'curtain',
-    'curtains',
-    'storage',
-    'basket',
-    'baskets',
-    'vase',
-    'vases',
-    'utensil',
-    'utensils',
-    'blender',
-    'toaster',
-    'microwave',
-    'vacuum',
-  ],
-  media: [
-    'media',
-    'dvd',
-    'dvds',
-    'cd',
-    'cds',
-    'record',
-    'records',
-    'vinyl',
-    'album',
-    'albums',
-    'blu-ray',
-    'bluray',
-    'cassette',
-    'cassettes',
-    'tape',
-    'tapes',
-    'movie',
-    'movies',
-    'music',
-  ],
+body {
+  background: #08172b;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-const EMPTY_ARRAY = []
-
-const APP_STYLES = {
-  panel: {
-    position: 'relative',
-    zIndex: 2,
-  },
-  tinyButton: {
-    width: 'auto',
-    minHeight: '30px',
-    padding: '6px 10px',
-    borderRadius: '10px',
-    fontSize: '0.8rem',
-    lineHeight: 1,
-    flex: '0 0 auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tinyPrimaryButton: {
-    width: 'auto',
-    minHeight: '30px',
-    padding: '6px 10px',
-    borderRadius: '10px',
-    fontSize: '0.8rem',
-    lineHeight: 1,
-    flex: '0 0 auto',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#fff',
-    color: '#08172b',
-  },
-  drawerOverlay: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 40,
-    background: 'rgba(0,0,0,0.42)',
-  },
-  drawerPanel: {
-    position: 'fixed',
-    inset: '0 auto 0 0',
-    zIndex: 41,
-    width: 'min(430px, 90vw)',
-    height: '100vh',
-    overflowY: 'auto',
-    background: 'rgba(7, 18, 34, 0.98)',
-    borderRight: '1px solid rgba(255,255,255,0.12)',
-    boxShadow: '18px 0 40px rgba(0,0,0,0.38)',
-    padding: '16px',
-  },
-  previewOverlay: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 60,
-    background: 'rgba(0,0,0,0.58)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px',
-  },
-  previewModal: {
-    width: 'min(740px, 100%)',
-    maxHeight: '90vh',
-    overflow: 'auto',
-    background: 'rgba(7,18,34,0.98)',
-    border: '1px solid rgba(255,255,255,0.16)',
-    borderRadius: '24px',
-    boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
-    padding: '18px',
-  },
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-// ---------------- HELPERS ----------------
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #3d4f68;
+  background: #102542;
+  color: white;
+}
 
-function makeId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID()
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+select option {
+  background: #102542;
+  color: white;
+}
+
+button {
+  border: none;
+  border-radius: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #1f6feb;
+  color: white;
+  font-weight: 700;
+  min-height: 44px;
+}
+
+button:hover {
+  opacity: 0.92;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  color: white;
+}
+
+.app-shell {
+  width: 100%;
+}
+
+.leaflet-container {
+  border-radius: 18px;
+}
+
+.leaflet-popup-content {
+  color: #111;
+}
+
+.store-card,
+.search-card {
+  background: #102542;
+  border: 1px solid #223854;
+  border-radius: 16px;
+  padding: 12px;
+  color: white !important;
+  overflow-wrap: anywhere;
+}
+
+.store-card strong,
+.search-card strong {
+  color: white !important;
+}
+
+.store-card p,
+.search-card p,
+.store-card div,
+.search-card div {
+  color: white !important;
+}
+
+fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+legend {
+  color: white;
+  padding: 0 8px;
+}
+
+.app-shell .dept-fieldset {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.app-shell .dept-fieldset input {
+  color: white;
+}
+
+.app-shell .dept-fieldset label {
+  color: white;
+}
+
+.app-shell .dept-fieldset span {
+  color: white;
+}
+
+.app-shell .dept-fieldset input[placeholder="Add sub-department (press Enter)"] {
+  width: 100% !important;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 8px 10px !important;
+  margin-top: 10px !important;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.app-shell .dept-fieldset input[placeholder="Add sub-department (press Enter)"]::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.app-shell .menu-popover {
+  background: #0c1c33;
+}
+
+.app-shell .menu-item {
+  background: transparent;
+}
+
+.app-shell .menu-item-danger {
+  color: #ff9b9b;
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 12px;
   }
 
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
-function normalizeText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function singularize(token) {
-  if (!token) return token
-  if (token.endsWith('ies') && token.length > 3) return `${token.slice(0, -3)}y`
-  if (token.endsWith('ses') && token.length > 3) return token.slice(0, -2)
-  if (token.endsWith('s') && token.length > 3) return token.slice(0, -1)
-  return token
-}
-
-function tokenize(value) {
-  return normalizeText(value)
-    .split(' ')
-    .map((t) => singularize(t))
-    .filter(Boolean)
-    .filter((t) => !STOP_WORDS.has(t))
-}
-
-function buildQueryProfile(query) {
-  const raw = normalizeText(query)
-  const tokens = tokenize(query)
-  const expandedTokens = new Set(tokens)
-  const categoryHints = new Set()
-
-  for (const token of tokens) {
-    for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
-      if (
-        aliases.some(
-          (alias) => alias === token || alias.includes(token) || token.includes(alias)
-        )
-      ) {
-        categoryHints.add(categoryKey)
-      }
-    }
-
-    const extra = {
-      lamp: ['housewares'],
-      chair: ['furniture'],
-      couch: ['furniture'],
-      sofa: ['furniture'],
-      desk: ['furniture'],
-      jeans: ['clothing'],
-      denim: ['clothing'],
-      tv: ['electronics'],
-      phone: ['electronics'],
-      laptop: ['electronics'],
-      book: ['books'],
-      novel: ['books'],
-      puzzle: ['toys'],
-      toy: ['toys'],
-      dvd: ['media'],
-      record: ['media'],
-      vinyl: ['media'],
-      mug: ['housewares'],
-      bowl: ['housewares'],
-      blanket: ['housewares'],
-      pillow: ['housewares'],
-    }[token]
-
-    if (extra) {
-      for (const hint of extra) categoryHints.add(hint)
-    }
+  .app-shell h1 {
+    font-size: 1.7rem;
+    text-align: left;
   }
 
-  return { raw, tokens, expandedTokens, categoryHints }
-}
-
-function containsLooseMatch(text, queryProfile) {
-  const normalized = normalizeText(text)
-  if (!normalized || !queryProfile.raw) return false
-
-  if (normalized.includes(queryProfile.raw)) return true
-
-  for (const token of queryProfile.tokens) {
-    if (normalized.includes(token)) return true
+  .app-shell h2 {
+    font-size: 1.25rem;
   }
 
-  return false
-}
-
-function tokenOverlapScore(text, queryProfile) {
-  const textTokens = tokenize(text)
-  if (!textTokens.length || !queryProfile.tokens.length) return 0
-
-  let score = 0
-  const matched = new Set()
-
-  for (const textToken of textTokens) {
-    if (queryProfile.expandedTokens.has(textToken)) {
-      matched.add(textToken)
-      score += 3
-      continue
-    }
-
-    for (const queryToken of queryProfile.tokens) {
-      if (
-        textToken === queryToken ||
-        textToken.includes(queryToken) ||
-        queryToken.includes(textToken)
-      ) {
-        matched.add(textToken)
-        score += 2
-        break
-      }
-    }
+  .app-shell .map-shell {
+    height: 240px;
   }
 
-  return score + matched.size * 0.5
-}
-
-function resolveCategoryKey(label) {
-  const normalized = normalizeText(label)
-
-  for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
-    if (aliases.some((alias) => normalized === alias || normalized.includes(alias))) {
-      return categoryKey
-    }
+  .app-shell .dept-fieldset input[placeholder="Add sub-department (press Enter)"] {
+    min-height: 38px;
+    padding: 7px 10px !important;
+    font-size: 0.92rem;
   }
 
-  return null
-}
-
-function shortenAddress(address) {
-  if (!address) return ''
-  const parts = String(address).split(',').map((p) => p.trim())
-  if (parts.length <= 2) return address
-
-  const street =
-    parts[0].match(/^\d+$/) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
-
-  const city = parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
-
-  return city ? `${street}, ${city}` : street
-}
-
-function safeArray(value) {
-  return Array.isArray(value) ? value : EMPTY_ARRAY
-}
-
-function makeEmptyForm() {
-  return {
-    storeName: '',
-    address: '',
-    departments: [],
-    coords: null,
+  .app-shell .top-actions {
+    gap: 12px;
   }
 }
 
-function calculateStoreSerendipity(store) {
-  const departments = safeArray(store.departments)
-  const allRatings = []
-
-  for (const dept of departments) {
-    const deptRating = Number(dept.rating)
-    if (Number.isFinite(deptRating)) allRatings.push(deptRating)
-
-    for (const sub of safeArray(dept.subDepartments)) {
-      const subRating = Number(sub.rating)
-      if (Number.isFinite(subRating)) allRatings.push(subRating)
-    }
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 8px;
   }
 
-  if (allRatings.length === 0) return 0
-
-  const avg = allRatings.reduce((sum, n) => sum + n, 0) / allRatings.length
-  const breadthBonus = Math.min(15, departments.length * 2 + Math.max(0, allRatings.length - 1) * 0.45)
-  const normalized = (avg / 5) * 85 + breadthBonus
-
-  return Math.max(0, Math.min(100, Number(normalized.toFixed(1))))
-}
-
-// ---------------- LOCATION PICKER ----------------
-
-function LocationPicker({ value, coords, onChange, placeholder = 'Search a location or address...' }) {
-  const [query, setQuery] = useState(value || '')
-  const [suggestions, setSuggestions] = useState([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    setQuery(value || '')
-  }, [value])
-
-  useEffect(() => {
-    const trimmed = query.trim()
-
-    if (!trimmed) {
-      setSuggestions([])
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-    const timeout = setTimeout(async () => {
-      if (trimmed.length < 3) {
-        setSuggestions([])
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=${encodeURIComponent(trimmed)}`
-        )
-        const data = await res.json()
-
-        if (!cancelled) {
-          setSuggestions(Array.isArray(data) ? data.slice(0, 5) : [])
-        }
-      } catch {
-        if (!cancelled) setSuggestions([])
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }, 350)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timeout)
-    }
-  }, [query])
-
-  const selectSuggestion = (item) => {
-    const lat = parseFloat(item.lat)
-    const lng = parseFloat(item.lon)
-
-    setQuery(item.display_name)
-    setSuggestions([])
-    onChange({
-      address: item.display_name,
-      coords: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null,
-    })
+  .app-shell .map-shell {
+    height: 220px;
   }
 
-  return (
-    <div className="location-picker" style={{ position: 'relative' }}>
-      <input
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => {
-          const nextValue = e.target.value
-          setQuery(nextValue)
-          onChange({
-            address: nextValue,
-            coords: null,
-          })
-        }}
-      />
-
-      {coords && (
-        <div style={{ marginTop: 8, fontSize: '0.92rem', color: 'rgba(255,255,255,0.74)' }}>
-          Location pinned: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-        </div>
-      )}
-
-      {loading && (
-        <div style={{ marginTop: 8, fontSize: '0.92rem', color: 'rgba(255,255,255,0.74)' }}>
-          Searching locations…
-        </div>
-      )}
-
-      {query.trim().length >= 3 && suggestions.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            left: 0,
-            right: 0,
-            zIndex: 12,
-            background: '#0c1c33',
-            border: '1px solid rgba(255,255,255,0.16)',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
-            maxHeight: '260px',
-            overflowY: 'auto',
-          }}
-        >
-          {suggestions.map((item) => (
-            <button
-              key={`${item.place_id}-${item.display_name}`}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => selectSuggestion(item)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                border: 'none',
-                background: 'transparent',
-                color: 'white',
-                padding: '12px 14px',
-                cursor: 'pointer',
-                borderRadius: 0,
-              }}
-            >
-              <strong>{item.display_name.split(',')[0]}</strong>
-              <small style={{ display: 'block', opacity: 0.74, marginTop: 4, lineHeight: 1.35 }}>
-                {item.display_name}
-              </small>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {query.trim().length >= 3 && !loading && suggestions.length === 0 && (
-        <div style={{ marginTop: 8, fontSize: '0.92rem', color: 'rgba(255,255,255,0.74)' }}>
-          No suggestions yet. You can still submit and it will try to geocode the text.
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ---------------- MAP CLICK ----------------
-
-function MapClickHandler({ onSelect }) {
-  useMapEvents({
-    async click(e) {
-      const { lat, lng } = e.latlng
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-        )
-        const data = await res.json()
-
-        onSelect({
-          lat,
-          lng,
-          address: data?.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-        })
-      } catch {
-        onSelect({
-          lat,
-          lng,
-          address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-        })
-      }
-    },
-  })
-
-  return null
-}
-
-// ---------------- MAP VIEW ----------------
-
-function MapView({ stores, onPickLocation }) {
-  const center = [28.8, -82.3]
-
-  return (
-    <div className="map-shell" style={{ position: 'relative', zIndex: 0 }}>
-      <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <MapClickHandler onSelect={onPickLocation} />
-
-        {stores.map((store) => (
-          <Marker key={store.id} position={[store.lat, store.lng]}>
-            <Popup>
-              <strong>{store.name}</strong>
-              <br />
-              {store.address}
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
-  )
-}
-
-// ---------------- STORE CATEGORY DISPLAY ----------------
-
-function StoreDepartmentsDisplay({ departments }) {
-  const safeDepartments = safeArray(departments)
-
-  if (!safeDepartments.length) {
-    return (
-      <div style={{ color: '#ffffff', fontSize: '0.95rem', opacity: 0.82 }}>
-        No departments added yet.
-      </div>
-    )
+  button {
+    width: 100%;
   }
-
-  return (
-    <div style={{ marginTop: 8 }}>
-      {safeDepartments.map((dept) => {
-        const subDepartments = safeArray(dept.subDepartments)
-
-        return (
-          <div key={dept.id} style={{ marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
-              {dept.name} - {dept.rating}/5
-            </div>
-
-            {subDepartments.length > 0 && (
-              <div style={{ marginLeft: 16, marginTop: 6 }}>
-                {subDepartments.map((sub) => (
-                  <div
-                    key={sub.id}
-                    style={{
-                      fontSize: '0.94rem',
-                      color: '#ffffff',
-                      opacity: 0.82,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {sub.name} - {sub.rating}/5
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ---------------- DEPARTMENT EDITOR ----------------
-
-function DepartmentEditor({ departments, onChange }) {
-  const [customDeptName, setCustomDeptName] = useState('')
-
-  const addDepartment = (name) => {
-    if (!name.trim()) return
-
-    onChange([
-      ...departments,
-      {
-        id: makeId(),
-        name,
-        rating: 3,
-        subDepartments: [],
-      },
-    ])
-  }
-
-  const update = (next) => onChange(next)
-
-  const removeDepartment = (id) => update(departments.filter((d) => d.id !== id))
-
-  const updateDeptRating = (id, rating) =>
-    update(departments.map((d) => (d.id === id ? { ...d, rating: Number(rating) } : d)))
-
-  const addSubDepartment = (deptId, name) => {
-    if (!name.trim()) return
-    update(
-      departments.map((d) =>
-        d.id === deptId
-          ? {
-              ...d,
-              subDepartments: [
-                ...safeArray(d.subDepartments),
-                {
-                  id: makeId(),
-                  name,
-                  rating: 3,
-                },
-              ],
-            }
-          : d
-      )
-    )
-  }
-
-  const removeSubDepartment = (deptId, subId) =>
-    update(
-      departments.map((d) =>
-        d.id === deptId
-          ? {
-              ...d,
-              subDepartments: safeArray(d.subDepartments).filter((s) => s.id !== subId),
-            }
-          : d
-      )
-    )
-
-  const updateSubRating = (deptId, subId, rating) =>
-    update(
-      departments.map((d) =>
-        d.id === deptId
-          ? {
-              ...d,
-              subDepartments: safeArray(d.subDepartments).map((s) =>
-                s.id === subId ? { ...s, rating: Number(rating) } : s
-              ),
-            }
-          : d
-      )
-    )
-
-  return (
-    <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
-      <div className="toolbar-grid" style={{ display: 'grid', gap: 8 }}>
-        <input
-          value={customDeptName}
-          onChange={(e) => setCustomDeptName(e.target.value)}
-          placeholder="Custom department"
-        />
-
-        <button
-          type="button"
-          onClick={() => {
-            addDepartment(customDeptName)
-            setCustomDeptName('')
-          }}
-        >
-          Add
-        </button>
-
-        <select
-          defaultValue=""
-          onChange={(e) => {
-            if (e.target.value) addDepartment(e.target.value)
-            e.target.value = ''
-          }}
-        >
-          <option value="" disabled>
-            Preset
-          </option>
-          {PRESET_DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {departments.map((dept) => (
-        <fieldset key={dept.id} className="dept-fieldset">
-          <legend>
-            <span>{dept.name}</span>
-            <button type="button" onClick={() => removeDepartment(dept.id)}>
-              Remove
-            </button>
-          </legend>
-
-          <label style={{ display: 'block', marginTop: 8, color: '#ffffff' }}>
-            Rating:{' '}
-            <input
-              type="number"
-              min="1"
-              max="5"
-              value={dept.rating}
-              onChange={(e) => updateDeptRating(dept.id, e.target.value)}
-              style={{ width: '72px', marginLeft: 8 }}
-            />
-          </label>
-
-          {safeArray(dept.subDepartments).map((sub) => (
-            <div key={sub.id} className="dept-row">
-              <span
-                style={{
-                  minWidth: 0,
-                  overflowWrap: 'anywhere',
-                  color: '#ffffff',
-                }}
-              >
-                {sub.name}
-              </span>
-
-              <input
-                type="number"
-                min="1"
-                max="5"
-                value={sub.rating}
-                onChange={(e) => updateSubRating(dept.id, sub.id, e.target.value)}
-                style={{ width: '72px' }}
-              />
-
-              <button type="button" onClick={() => removeSubDepartment(dept.id, sub.id)}>
-                Remove
-              </button>
-            </div>
-          ))}
-
-          <input
-            placeholder="Add sub-department (press Enter)"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addSubDepartment(dept.id, e.target.value)
-                e.target.value = ''
-              }
-            }}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              marginTop: '10px',
-            }}
-          />
-        </fieldset>
-      ))}
-    </div>
-  )
-}
-
-// ---------------- OPTIONS MENU ----------------
-
-function OptionsMenu({ onEdit, onDelete }) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div
-      style={{ position: 'relative', display: 'inline-block' }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        style={APP_STYLES.tinyButton}
-      >
-        ⋯
-      </button>
-
-      {open && (
-        <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 5 }}
-          />
-
-          <div className="menu-popover">
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false)
-                onEdit()
-              }}
-              className="menu-item"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false)
-                onDelete()
-              }}
-              className="menu-item menu-item-danger"
-            >
-              Delete
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ---------------- RECOMMENDATION ENGINE ----------------
-
-function serendipityScoreStore(store, query) {
-  const profile = buildQueryProfile(query)
-  let serendipityScore = 0
-  const reasons = []
-
-  const addReason = (label) => {
-    if (!label) return
-    if (!reasons.includes(label)) reasons.push(label)
-  }
-
-  const storeNameOverlap = tokenOverlapScore(store.name, profile)
-  if (containsLooseMatch(store.name, profile)) {
-    serendipityScore += 12
-    addReason('store name')
-  }
-  if (storeNameOverlap > 0) {
-    serendipityScore += storeNameOverlap * 2
-  }
-
-  if (containsLooseMatch(store.address, profile)) {
-    serendipityScore += 2
-    addReason('location')
-  }
-
-  const departments = safeArray(store.departments)
-  let matchedDepartments = 0
-  let matchedSubDepartments = 0
-  let ratingBoost = 0
-
-  for (const dept of departments) {
-    const deptRating = Number(dept.rating) || 0
-    const deptKey = resolveCategoryKey(dept.name)
-    const deptHintHit = deptKey && profile.categoryHints.has(deptKey)
-
-    let deptScore = 0
-
-    if (containsLooseMatch(dept.name, profile)) {
-      deptScore += 10
-      addReason(dept.name)
-    }
-
-    const deptOverlap = tokenOverlapScore(dept.name, profile)
-    deptScore += deptOverlap * 3
-
-    if (deptHintHit) {
-      deptScore += 16
-      addReason(dept.name)
-    }
-
-    deptScore += deptRating * 1.75
-
-    const subDepartments = safeArray(dept.subDepartments)
-
-    for (const sub of subDepartments) {
-      const subRating = Number(sub.rating) || 0
-      let subScore = 0
-
-      if (containsLooseMatch(sub.name, profile)) {
-        subScore += 8
-        addReason(sub.name)
-      }
-
-      const subOverlap = tokenOverlapScore(sub.name, profile)
-      subScore += subOverlap * 4
-
-      if (deptHintHit) {
-        subScore += 8
-      }
-
-      subScore += subRating * 2
-
-      if (subScore > 0) {
-        matchedSubDepartments += 1
-        serendipityScore += subScore
-        addReason(`${dept.name} → ${sub.name}`)
-      }
-    }
-
-    if (deptScore > 0) {
-      matchedDepartments += 1
-      serendipityScore += deptScore
-      ratingBoost += deptRating
-      addReason(dept.name)
-    }
-  }
-
-  serendipityScore += matchedDepartments * 2.5
-  serendipityScore += matchedSubDepartments * 1.25
-  serendipityScore += ratingBoost * 0.4
-
-  if (matchedDepartments > 0 || matchedSubDepartments > 0) {
-    serendipityScore += Math.min(6, departments.length * 0.25)
-  }
-
-  return {
-    serendipityScore,
-    reasons,
-    matchedDepartments,
-    matchedSubDepartments,
-  }
-}
-
-// ---------------- FORM PANEL ----------------
-
-function StoreFormPanel({ title, submitLabel, form, setForm, onSubmit, onCancel }) {
-  return (
-    <form
-      onSubmit={onSubmit}
-      className="store-card"
-      style={{ ...APP_STYLES.panel, marginBottom: '16px', zIndex: 2 }}
-    >
-      <div className="top-actions" style={{ marginBottom: 12 }}>
-        <div>
-          <h2 style={{ margin: '0 0 10px', fontSize: '1.2rem', color: '#ffffff' }}>{title}</h2>
-          <div style={{ color: 'rgba(255,255,255,0.72)' }}>
-            Use the location picker or click the map.
-          </div>
-        </div>
-
-        <button type="button" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-
-      <div className="form-grid">
-        <div className="stack-gap">
-          <input
-            placeholder="Store name"
-            value={form.storeName}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                storeName: e.target.value,
-              }))
-            }
-          />
-
-          <LocationPicker
-            value={form.address}
-            coords={form.coords}
-            onChange={(next) =>
-              setForm((prev) => ({
-                ...prev,
-                address: next.address,
-                coords: next.coords,
-              }))
-            }
-          />
-
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button type="submit">{submitLabel}</button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setForm((prev) => ({
-                  ...prev,
-                  address: '',
-                  coords: null,
-                }))
-              }
-            >
-              Clear Location
-            </button>
-          </div>
-        </div>
-
-        <DepartmentEditor
-          departments={form.departments}
-          onChange={(departments) =>
-            setForm((prev) => ({
-              ...prev,
-              departments,
-            }))
-          }
-        />
-      </div>
-    </form>
-  )
-}
-
-// ---------------- PREVIEW MODAL ----------------
-
-function StorePreviewModal({ store, onClose, onEdit }) {
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
-  if (!store) return null
-
-  const storeSerendipityScore = calculateStoreSerendipity(store)
-
-  return (
-    <div style={APP_STYLES.previewOverlay} onClick={onClose} role="presentation">
-      <div
-        style={APP_STYLES.previewModal}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="top-actions" style={{ marginBottom: 14 }}>
-          <div>
-            <h2 style={{ margin: '0 0 6px', fontSize: '1.2rem', color: '#ffffff' }}>
-              Store preview
-            </h2>
-            <div style={{ color: 'rgba(255,255,255,0.72)' }}>Isolated view for one saved store.</div>
-          </div>
-
-          <button type="button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-
-        <div className="search-card" style={{ background: '#102542' }}>
-          <div className="store-card-head" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-            <strong className="store-card-title" style={{ color: '#fff', fontSize: '1.05rem' }}>
-              {store.name}
-            </strong>
-
-            <span style={{ background: '#fff', color: '#08172b', borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: '0.86rem' }}>
-              {storeSerendipityScore.toFixed(0)}/100
-            </span>
-          </div>
-
-          <div style={{ marginTop: 10, color: '#fff' }}>{store.address}</div>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-            <button type="button" onClick={onEdit}>
-              Edit Store
-            </button>
-
-            <button type="button" onClick={onClose}>
-              Back
-            </button>
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <StoreDepartmentsDisplay departments={store.departments} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------------- MAIN APP ----------------
-
-export default function App() {
-  const [stores, setStores] = useState(() => {
-    try {
-      const saved = localStorage.getItem('stores')
-      const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })
-
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [createForm, setCreateForm] = useState(makeEmptyForm())
-
-  const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState(makeEmptyForm())
-
-  const [expandedStoreId, setExpandedStoreId] = useState(null)
-  const [previewStore, setPreviewStore] = useState(null)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-
-  useEffect(() => {
-    localStorage.setItem('stores', JSON.stringify(stores))
-  }, [stores])
-
-  useEffect(() => {
-    const trimmed = searchQuery.trim()
-
-    if (!trimmed) {
-      setSearchResults([])
-      return
-    }
-
-    const results = stores
-      .map((store) => {
-        const searchScored = serendipityScoreStore(store, trimmed)
-        const storeSerendipityScore = calculateStoreSerendipity(store)
-
-        return {
-          ...store,
-          ...searchScored,
-          storeSerendipityScore,
-        }
-      })
-      .filter((s) => s.serendipityScore > 0)
-      .sort((a, b) => {
-        if (b.serendipityScore !== a.serendipityScore) {
-          return b.serendipityScore - a.serendipityScore
-        }
-
-        return b.storeSerendipityScore - a.storeSerendipityScore
-      })
-      .slice(0, 3)
-
-    setSearchResults(results)
-  }, [searchQuery, stores])
-
-  const geocode = async (addr) => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=${encodeURIComponent(addr)}`
-      )
-      const data = await res.json()
-      if (!Array.isArray(data) || data.length === 0) return null
-
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-        address: data[0].display_name || addr,
-      }
-    } catch {
-      return null
-    }
-  }
-
-  const resetCreate = () => {
-    setShowCreateForm(false)
-    setCreateForm(makeEmptyForm())
-  }
-
-  const addStore = async (e) => {
-    e.preventDefault()
-
-    if (!createForm.storeName.trim() || !createForm.address.trim()) {
-      return
-    }
-
-    let coords = createForm.coords
-    let address = createForm.address
-
-    if (!coords) {
-      const geo = await geocode(createForm.address)
-      if (geo) {
-        coords = { lat: geo.lat, lng: geo.lng }
-        address = geo.address || createForm.address
-      }
-    }
-
-    if (!coords) {
-      alert('No location found')
-      return
-    }
-
-    setStores((prev) => [
-      ...prev,
-      {
-        id: makeId(),
-        name: createForm.storeName,
-        address,
-        lat: coords.lat,
-        lng: coords.lng,
-        departments: createForm.departments,
-      },
-    ])
-
-    resetCreate()
-    setDrawerOpen(false)
-  }
-
-  const startEdit = (store) => {
-    setEditId(store.id)
-    setShowCreateForm(false)
-    setDrawerOpen(false)
-    setExpandedStoreId(null)
-    setPreviewStore(null)
-    setEditForm({
-      storeName: store.name,
-      address: store.address,
-      coords: { lat: store.lat, lng: store.lng },
-      departments: store.departments,
-    })
-  }
-
-  const cancelEdit = () => {
-    setEditId(null)
-    setEditForm(makeEmptyForm())
-  }
-
-  const saveEdit = async (e) => {
-    e.preventDefault()
-
-    if (!editForm.storeName.trim() || !editForm.address.trim()) {
-      return
-    }
-
-    let coords = editForm.coords
-    let address = editForm.address
-
-    if (!coords) {
-      const geo = await geocode(editForm.address)
-      if (geo) {
-        coords = { lat: geo.lat, lng: geo.lng }
-        address = geo.address || editForm.address
-      }
-    }
-
-    if (!coords) {
-      alert('No location found')
-      return
-    }
-
-    setStores((prev) =>
-      prev.map((s) =>
-        s.id === editId
-          ? {
-              ...s,
-              name: editForm.storeName,
-              address,
-              lat: coords.lat,
-              lng: coords.lng,
-              departments: editForm.departments,
-            }
-          : s
-      )
-    )
-
-    setEditId(null)
-    setEditForm(makeEmptyForm())
-  }
-
-  const deleteStore = (id) => {
-    setStores((prev) => prev.filter((s) => s.id !== id))
-    if (editId === id) {
-      cancelEdit()
-    }
-    if (previewStore?.id === id) {
-      setPreviewStore(null)
-    }
-  }
-
-  const handleMapPick = ({ lat, lng, address }) => {
-    if (editId) {
-      setEditForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
-      return
-    }
-
-    if (showCreateForm) {
-      setCreateForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
-    }
-  }
-
-  return (
-    <div className="app-shell" style={{ width: '100%' }}>
-      <div style={{ maxWidth: '1180px', margin: '0 auto', width: '100%' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-          <div className="header-bar" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div className="header-brand" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Open saved stores menu"
-                style={{ width: '48px', height: '48px', borderRadius: '14px' }}
-              >
-                ☰
-              </button>
-
-              <div className="header-copy" style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                <h1 style={{ margin: 0, fontSize: 'clamp(1.8rem, 4vw, 3rem)', lineHeight: 1.05, letterSpacing: '-0.04em', color: '#ffffff' }}>
-                  Thrifter Sifter
-                </h1>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.98rem' }}>
-                  Search above the map, then use the burger menu for saved stores.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (editId) cancelEdit()
-                setShowCreateForm((v) => !v)
-              }}
-            >
-              {showCreateForm ? 'Close Create' : 'Create Store'}
-            </button>
-          </div>
-        </div>
-
-        {/* SEARCH */}
-        <div
-          className="search-card"
-          style={{
-            ...APP_STYLES.panel,
-            marginBottom: '16px',
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          <h2 style={{ margin: '0 0 10px', fontSize: '1.2rem', color: '#ffffff' }}>Search</h2>
-
-          <input
-            placeholder="Search for an item..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-
-          {searchQuery.trim() && searchResults.length === 0 && (
-            <div style={{ marginTop: 10, color: '#ffffff', opacity: 0.72 }}>
-              No strong matches yet.
-            </div>
-          )}
-
-          {searchResults.length > 0 && (
-            <div style={{ marginTop: 12 }} className="search-list">
-              <h3 style={{ margin: '0 0 4px', color: '#ffffff' }}>Top Matches</h3>
-
-              {searchResults.map((s) => (
-                <div key={s.id} className="search-card">
-                  <div className="store-card-head" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                    <strong style={{ color: '#ffffff', fontSize: '1.02rem', display: 'block', marginBottom: 4 }}>
-                      {s.name}
-                    </strong>
-
-                    <span style={{ background: '#fff', color: '#08172b', borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: '0.86rem' }}>
-                      Search {s.serendipityScore.toFixed(1)}
-                    </span>
-                  </div>
-
-                  <div style={{ color: '#ffffff', opacity: 0.88 }}>{shortenAddress(s.address)}</div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, padding: '7px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#ffffff', fontSize: '0.86rem', fontWeight: 700 }}>
-                      Store score {s.storeSerendipityScore.toFixed(0)}/100
-                    </span>
-                  </div>
-
-                  {s.reasons?.length > 0 && (
-                    <div style={{ marginTop: 6, fontSize: '0.92rem', color: '#ffffff', opacity: 0.78 }}>
-                      Matches: {s.reasons.slice(0, 3).join(' • ')}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* MAP */}
-        <MapView stores={stores} onPickLocation={handleMapPick} />
-
-        {/* CREATE */}
-        {!editId && showCreateForm && (
-          <StoreFormPanel
-            title="Create Store"
-            submitLabel="Create"
-            form={createForm}
-            setForm={setCreateForm}
-            onSubmit={addStore}
-            onCancel={resetCreate}
-          />
-        )}
-
-        {/* EDIT */}
-        {editId && (
-          <StoreFormPanel
-            title="Edit Store"
-            submitLabel="Save Changes"
-            form={editForm}
-            setForm={setEditForm}
-            onSubmit={saveEdit}
-            onCancel={cancelEdit}
-          />
-        )}
-
-        {/* DRAWER */}
-        {drawerOpen && (
-          <>
-            <div style={APP_STYLES.drawerOverlay} onClick={() => setDrawerOpen(false)} />
-
-            <aside style={APP_STYLES.drawerPanel}>
-              <div className="drawer-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', paddingBottom: 12, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-                <div>
-                  <h2 style={{ margin: '0 0 10px', fontSize: '1.2rem', color: '#ffffff' }}>Saved Stores</h2>
-                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.72)' }}>
-                    {stores.length} saved {stores.length === 1 ? 'store' : 'stores'}.
-                  </p>
-                </div>
-
-                <button type="button" onClick={() => setDrawerOpen(false)}>
-                  Close
-                </button>
-              </div>
-
-              <div className="store-list" style={{ display: 'grid', gap: 12 }}>
-                {stores.length === 0 && (
-                  <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
-                    No stores yet. Use Create Store to add one.
-                  </p>
-                )}
-
-                {stores.map((store) => {
-                  const isOpen = expandedStoreId === store.id
-                  const storeSerendipityScore = calculateStoreSerendipity(store)
-
-                  return (
-                    <div
-                      key={store.id}
-                      className="store-card"
-                      style={{
-                        background: '#102542',
-                        border: '1px solid #223854',
-                        borderRadius: '16px',
-                        padding: '12px',
-                        color: 'white',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => setExpandedStoreId(isOpen ? null : store.id)}
-                    >
-                      <div className="store-card-head" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
-                        <strong style={{ color: '#ffffff', fontSize: '1.05rem', lineHeight: 1.25 }}>
-                          {store.name}
-                        </strong>
-
-                        <span style={{ background: '#fff', color: '#08172b', borderRadius: 999, padding: '7px 10px', fontWeight: 800, fontSize: '0.86rem' }}>
-                          {storeSerendipityScore.toFixed(0)}/100
-                        </span>
-                      </div>
-
-                      <p style={{ marginBottom: 0, color: '#ffffff', opacity: 0.88, marginTop: 8 }}>
-                        {shortenAddress(store.address)}
-                      </p>
-
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, padding: '7px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#ffffff', fontSize: '0.86rem', fontWeight: 700 }}>
-                          Store Serendipity
-                        </span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, padding: '7px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#ffffff', fontSize: '0.86rem', fontWeight: 700 }}>
-                          {safeArray(store.departments).length} departments
-                        </span>
-                      </div>
-
-                      <div
-                        className="store-card-actions"
-                        style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 10 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          style={APP_STYLES.tinyPrimaryButton}
-                          onClick={() => setPreviewStore(store)}
-                        >
-                          View
-                        </button>
-
-                        <OptionsMenu
-                          onEdit={() => startEdit(store)}
-                          onDelete={() => deleteStore(store.id)}
-                        />
-                      </div>
-
-                      {isOpen && (
-                        <div style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              gap: 10,
-                              alignItems: 'center',
-                              marginBottom: 10,
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            <div style={{ color: '#ffffff', fontWeight: 700 }}>Store details</div>
-
-                            <button
-                              type="button"
-                              style={APP_STYLES.tinyButton}
-                              onClick={() => setPreviewStore(store)}
-                            >
-                              View
-                            </button>
-                          </div>
-
-                          <StoreDepartmentsDisplay departments={store.departments} />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </aside>
-          </>
-        )}
-
-        {/* PREVIEW */}
-        {previewStore && (
-          <StorePreviewModal
-            store={previewStore}
-            onClose={() => setPreviewStore(null)}
-            onEdit={() => {
-              setPreviewStore(null)
-              startEdit(previewStore)
-            }}
-          />
-        )}
-      </div>
-    </div>
-  )
 }
