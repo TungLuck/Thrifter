@@ -557,16 +557,11 @@ const layoutCSS = `
   }
 
   .app-shell .menu-popover {
-    position: absolute;
-    left: 0;
-    right: auto;
-    top: calc(100% + 6px);
-    margin-top: 0;
     background: rgba(7,18,34,0.98);
     color: white;
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 14px;
-    z-index: 10;
+    z-index: 20;
     min-width: 140px;
     max-width: min(240px, calc(100vw - 32px));
     overflow: hidden;
@@ -762,17 +757,17 @@ const layoutCSS = `
     }
 
     .app-shell .burger-button {
-      width: 40px !important;
-      height: 40px !important;
-      min-height: 40px !important;
+      width: 36px !important;
+      height: 36px !important;
+      min-height: 36px !important;
       padding: 0 !important;
-      font-size: 1rem !important;
-      border-radius: 12px !important;
+      font-size: 0.95rem !important;
+      border-radius: 11px !important;
     }
   }
 `
 
-// ---------------- HELPER FUNCTIONS ----------------
+// ---------------- HELPERS ----------------
 
 function makeId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -1399,13 +1394,53 @@ function DepartmentEditor({ departments, onChange }) {
 
 function OptionsMenu({ onView, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [menuStyle, setMenuStyle] = useState(null)
+  const buttonRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const updatePlacement = () => {
+      const button = buttonRef.current
+      if (!button) return
+
+      const rect = button.getBoundingClientRect()
+      const estimatedWidth = 150
+      const estimatedHeight = 132
+      const margin = 8
+
+      let left = rect.right - estimatedWidth
+      left = Math.max(margin, Math.min(left, window.innerWidth - estimatedWidth - margin))
+
+      let top = rect.bottom + 6
+      if (top + estimatedHeight > window.innerHeight - margin) {
+        top = Math.max(margin, rect.top - estimatedHeight - 6)
+      }
+
+      setMenuStyle({
+        position: 'fixed',
+        top,
+        left,
+        width: estimatedWidth,
+      })
+    }
+
+    updatePlacement()
+
+    const onScrollOrResize = () => updatePlacement()
+    window.addEventListener('resize', onScrollOrResize)
+    window.addEventListener('scroll', onScrollOrResize, true)
+
+    return () => {
+      window.removeEventListener('resize', onScrollOrResize)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+    }
+  }, [open])
 
   return (
-    <div
-      style={{ position: 'relative', display: 'inline-block' }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div style={{ position: 'relative', display: 'inline-block' }} onClick={(e) => e.stopPropagation()}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -1416,12 +1451,9 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
 
       {open && (
         <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 5 }}
-          />
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 19 }} />
 
-          <div className="menu-popover">
+          <div className="menu-popover" style={menuStyle || { position: 'fixed', top: 0, left: 0 }}>
             <button
               type="button"
               onClick={() => {
@@ -1576,11 +1608,7 @@ function StoreFormPanel({
   onCancel,
 }) {
   return (
-    <form
-      onSubmit={onSubmit}
-      style={{ ...APP_STYLES.panel, marginBottom: '16px' }}
-      className="store-card"
-    >
+    <form onSubmit={onSubmit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }} className="store-card">
       <div className="top-actions" style={{ marginBottom: 12 }}>
         <div>
           <h2 style={APP_STYLES.sectionTitle}>{title}</h2>
@@ -1664,7 +1692,6 @@ function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
       <div className="top-actions" style={{ marginBottom: 14 }}>
         <div>
           <h2 style={APP_STYLES.sectionTitle}>Store preview</h2>
-          <div style={APP_STYLES.muted}>Isolated view for one saved store.</div>
         </div>
 
         <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
@@ -1819,6 +1846,28 @@ export default function App() {
     setSearchResults(results)
   }, [searchQuery, stores])
 
+  useEffect(() => {
+    if (!previewStore || !previewRef.current) return
+
+    const node = previewRef.current
+    const scrollPreview = () => {
+      const top = Math.max(0, node.getBoundingClientRect().top + window.pageYOffset - 10)
+      window.scrollTo({ top, behavior: 'smooth' })
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    const t1 = window.setTimeout(() => {
+      requestAnimationFrame(scrollPreview)
+    }, 60)
+
+    const t2 = window.setTimeout(scrollPreview, 260)
+
+    return () => {
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+    }
+  }, [previewStore])
+
   const geocode = async (addr) => {
     try {
       const res = await fetch(
@@ -1972,13 +2021,6 @@ export default function App() {
     setDrawerOpen(false)
     setHoveredStore(null)
     setExpandedStoreId(null)
-
-    window.setTimeout(() => {
-      previewRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      })
-    }, 50)
   }
 
   return (
@@ -1987,32 +2029,53 @@ export default function App() {
 
       <div style={APP_STYLES.container}>
         <div style={APP_STYLES.headerRow}>
-          <div className="header-bar">
-            <div className="header-brand">
-              <button
-                type="button"
-                className="burger-button"
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Open saved stores menu"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  minHeight: '40px',
-                  padding: 0,
-                  fontSize: '1rem',
-                  borderRadius: '12px',
-                }}
+          <div
+            className="header-bar"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'nowrap',
+              width: '100%',
+            }}
+          >
+            <div
+              className="header-brand"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                minWidth: 0,
+                flex: 1,
+              }}
+            >
+              <div
+                className="header-copy"
+                style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}
               >
-                ☰
-              </button>
-
-              <div className="header-copy">
                 <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
-                <p style={APP_STYLES.subtitle}>
-                  Browse thrift stores, search items, and save locations with notes.
-                </p>
+                <p style={APP_STYLES.subtitle}>Serendipitous search on the thrifting trail</p>
               </div>
             </div>
+
+            <button
+              type="button"
+              className="burger-button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open saved stores menu"
+              style={{
+                width: '40px',
+                height: '40px',
+                minHeight: '40px',
+                padding: 0,
+                fontSize: '1rem',
+                borderRadius: '12px',
+                flex: '0 0 auto',
+              }}
+            >
+              ☰
+            </button>
           </div>
         </div>
 
