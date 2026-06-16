@@ -1141,7 +1141,7 @@ function CategoryDetailsEditor({
             </option>
           ))}
         </select>
-        <div className="field-help">Pick the usual shelf price level for this category.</div>
+        <div className="field-help"></div>
       </div>
 
       <div className="field-group">
@@ -1153,7 +1153,7 @@ function CategoryDetailsEditor({
           onChange={(e) => onNotesChange(e.target.value)}
           style={APP_STYLES.textarea}
         />
-        <div className="field-help">List actual items you found, plus sizes, styles, or keywords.</div>
+        <div className="field-help">List specific items found</div>
       </div>
     </div>
   )
@@ -1573,7 +1573,7 @@ function DepartmentEditor({ departments, onChange }) {
             onPriceChange={(value) => updateDepartmentField(dept.id, 'price', value)}
             notes={dept.notes}
             onNotesChange={(value) => updateDepartmentField(dept.id, 'notes', value)}
-            notePlaceholder="Write actual items, sizes, styles, or keywords found here. Example: vinyl records, paperbacks, denim jeans."
+            notePlaceholder=""
           />
 
           <div style={{ marginTop: 12 }}>
@@ -2320,7 +2320,7 @@ export default function App() {
           </div>
 
           <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.74)', fontSize: '0.92rem' }}>
-            Search looks at store names, categories, and notes and lists stores most likely to carry the item
+            Search compares stores to determine which one most likely carries the desired item
           </div>
 
           {searchQuery.trim() && searchResults.length === 0 && (
@@ -2379,8 +2379,18 @@ export default function App() {
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
         {!editId && !showCreateForm && (
-          <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }} className="store-card">
-            <div className="top-actions">
+          <div
+            style={{
+              ...APP_STYLES.panel,
+              display: 'inline-flex',
+              width: 'auto',
+              maxWidth: 'fit-content',
+              marginBottom: '16px',
+              padding: '10px 12px',
+            }}
+            className="store-card"
+          >
+            <div className="top-actions" style={{ justifyContent: 'flex-start' }}>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(true)}
