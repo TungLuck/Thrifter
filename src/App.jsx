@@ -339,6 +339,8 @@ const APP_STYLES = {
     fontSize: '0.98rem',
   },
   panel: {
+    position: 'relative',
+    zIndex: 2,
     background: 'rgba(7, 18, 34, 0.92)',
     border: '1px solid rgba(255,255,255,0.10)',
     borderRadius: '22px',
@@ -373,6 +375,32 @@ const APP_STYLES = {
     cursor: 'pointer',
     minHeight: '44px',
   },
+  buttonTiny: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: '10px',
+    padding: '7px 10px',
+    background: 'rgba(255,255,255,0.08)',
+    color: '#ffffff',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '32px',
+    fontSize: '0.82rem',
+    lineHeight: 1,
+  },
+  buttonTinyPrimary: {
+    appearance: 'none',
+    border: 'none',
+    borderRadius: '10px',
+    padding: '7px 10px',
+    background: '#ffffff',
+    color: '#071427',
+    fontWeight: 800,
+    cursor: 'pointer',
+    minHeight: '32px',
+    fontSize: '0.82rem',
+    lineHeight: 1,
+  },
   input: {
     width: '100%',
     minWidth: 0,
@@ -398,6 +426,8 @@ const APP_STYLES = {
     minHeight: '44px',
   },
   darkCard: {
+    position: 'relative',
+    zIndex: 1,
     background: 'linear-gradient(180deg, rgba(14,35,64,0.96), rgba(7,18,34,0.96))',
     color: '#ffffff',
     border: '1px solid rgba(255,255,255,0.10)',
@@ -434,6 +464,27 @@ const APP_STYLES = {
     fontWeight: 800,
     lineHeight: 1,
     whiteSpace: 'nowrap',
+  },
+  previewOverlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 60,
+    background: 'rgba(0,0,0,0.55)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+  },
+  previewModal: {
+    width: 'min(720px, 100%)',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    background: 'rgba(7,18,34,0.98)',
+    border: '1px solid rgba(255,255,255,0.16)',
+    borderRadius: '24px',
+    boxShadow: '0 24px 60px rgba(0,0,0,0.40)',
+    padding: '18px',
+    boxSizing: 'border-box',
   },
 }
 
@@ -474,14 +525,6 @@ const layoutCSS = `
     min-width: 0;
   }
 
-  .app-shell .header-copy h1 {
-    margin: 0;
-  }
-
-  .app-shell .header-copy p {
-    margin: 0;
-  }
-
   .app-shell .search-list {
     display: grid;
     gap: 12px;
@@ -493,6 +536,8 @@ const layoutCSS = `
   }
 
   .app-shell .map-shell {
+    position: relative;
+    z-index: 0;
     height: 320px;
     margin-bottom: 20px;
     border-radius: 22px;
@@ -717,6 +762,13 @@ const layoutCSS = `
   .app-shell .store-card-meta {
     margin-top: 8px;
     color: rgba(255,255,255,0.88);
+  }
+
+  .app-shell .store-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
   }
 
   @media (max-width: 768px) {
@@ -1413,7 +1465,7 @@ function OptionsMenu({ onEdit, onDelete }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        style={APP_STYLES.buttonSecondary}
+        style={APP_STYLES.buttonTiny}
       >
         Options
       </button>
@@ -1642,6 +1694,82 @@ function StoreFormPanel({
   )
 }
 
+// ---------------- STORE PREVIEW ----------------
+
+function StorePreviewModal({ store, onClose, onEdit }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  if (!store) return null
+
+  const storeSerendipityScore = calculateStoreSerendipity(store)
+
+  return (
+    <div
+      style={APP_STYLES.previewOverlay}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        style={APP_STYLES.previewModal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="top-actions" style={{ marginBottom: 14 }}>
+          <div>
+            <h2 style={{ ...APP_STYLES.sectionTitle, marginBottom: 6 }}>Store preview</h2>
+            <div style={APP_STYLES.muted}>Isolated view for one saved store.</div>
+          </div>
+
+          <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
+            Close
+          </button>
+        </div>
+
+        <div style={APP_STYLES.darkCard}>
+          <div className="store-card-head">
+            <strong className="store-card-title">{store.name}</strong>
+
+            <span style={APP_STYLES.badgeStrong}>
+              {storeSerendipityScore.toFixed(0)}/100
+            </span>
+          </div>
+
+          <div className="score-row">
+            <span style={APP_STYLES.badge}>Store Serendipity</span>
+            <span style={APP_STYLES.badge}>
+              {safeArray(store.departments).length} departments
+            </span>
+          </div>
+
+          <p className="store-card-meta">{store.address}</p>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+            <button type="button" onClick={onEdit} style={APP_STYLES.buttonPrimary}>
+              Edit Store
+            </button>
+
+            <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
+              Back
+            </button>
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <StoreDepartmentsDisplay departments={store.departments} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---------------- MAIN APP ----------------
 
 export default function App() {
@@ -1663,6 +1791,7 @@ export default function App() {
   const [editForm, setEditForm] = useState(makeEmptyForm())
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
+  const [previewStore, setPreviewStore] = useState(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -1770,6 +1899,7 @@ export default function App() {
     setShowCreateForm(false)
     setDrawerOpen(false)
     setExpandedStoreId(null)
+    setPreviewStore(null)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -1829,6 +1959,9 @@ export default function App() {
     setStores((prev) => prev.filter((s) => s.id !== id))
     if (editId === id) {
       cancelEdit()
+    }
+    if (previewStore?.id === id) {
+      setPreviewStore(null)
     }
   }
 
@@ -1943,7 +2076,7 @@ export default function App() {
         {/* MAP */}
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {/* CREATE */}
+        {/* CREATE — stays below search and map */}
         {!editId && showCreateForm && (
           <StoreFormPanel
             title="Create Store"
@@ -1955,7 +2088,7 @@ export default function App() {
           />
         )}
 
-        {/* EDIT */}
+        {/* EDIT — also below search and map */}
         {editId && (
           <StoreFormPanel
             title="Edit Store"
@@ -2034,6 +2167,24 @@ export default function App() {
                         </span>
                       </div>
 
+                      <div className="store-card-actions" style={{ marginTop: 10 }}>
+                        <button
+                          type="button"
+                          style={APP_STYLES.buttonTinyPrimary}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewStore(store)
+                          }}
+                        >
+                          View
+                        </button>
+
+                        <OptionsMenu
+                          onEdit={() => startEdit(store)}
+                          onDelete={() => deleteStore(store.id)}
+                        />
+                      </div>
+
                       {isOpen && (
                         <div
                           style={{ marginTop: 12 }}
@@ -2053,10 +2204,13 @@ export default function App() {
                               Store details
                             </div>
 
-                            <OptionsMenu
-                              onEdit={() => startEdit(store)}
-                              onDelete={() => deleteStore(store.id)}
-                            />
+                            <button
+                              type="button"
+                              style={APP_STYLES.buttonTiny}
+                              onClick={() => setPreviewStore(store)}
+                            >
+                              View
+                            </button>
                           </div>
 
                           <StoreDepartmentsDisplay departments={store.departments} />
@@ -2068,6 +2222,18 @@ export default function App() {
               </div>
             </aside>
           </>
+        )}
+
+        {/* ISOLATED STORE VIEW */}
+        {previewStore && (
+          <StorePreviewModal
+            store={previewStore}
+            onClose={() => setPreviewStore(null)}
+            onEdit={() => {
+              setPreviewStore(null)
+              startEdit(previewStore)
+            }}
+          />
         )}
       </div>
     </div>
