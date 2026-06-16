@@ -186,7 +186,9 @@ function shortenAddress(address) {
   if (parts.length <= 2) return address
 
   const street =
-    parts[0].match(/^\d+$/) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
+    parts[0].match(/^\d+$/) && parts[1]
+      ? `${parts[0]} ${parts[1]}`
+      : parts[0]
 
   const city =
     parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
@@ -224,6 +226,7 @@ function MapClickHandler({ onSelect }) {
 
   return null
 }
+
 
 // ---------------- MAP VIEW ----------------
 
@@ -508,10 +511,7 @@ function OptionsMenu({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div
-      className="options-wrap"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="options-wrap" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -522,10 +522,7 @@ function OptionsMenu({ onEdit, onDelete }) {
 
       {open && (
         <>
-          <div
-            onClick={() => setOpen(false)}
-            className="menu-backdrop"
-          />
+          <div onClick={() => setOpen(false)} className="menu-backdrop" />
 
           <div className="options-menu">
             <button
@@ -554,77 +551,6 @@ function OptionsMenu({ onEdit, onDelete }) {
       )}
     </div>
   )
-}
-
-// ---------------- RECOMMENDATION ENGINE ----------------
-
-function scoreStore(store, query) {
-  const q = String(query || '').trim()
-  const queryTokens = tokenize(q)
-
-  if (!q || !queryTokens.length) {
-    return {
-      score: 0,
-      reasons: [],
-      matchedDepartments: 0,
-      matchedSubDepartments: 0,
-    }
-  }
-
-  let score = 0
-  const reasons = []
-  const addReason = (label) => {
-    if (label && !reasons.includes(label)) reasons.push(label)
-  }
-
-  const storeNameScore = scoreField(store.name, queryTokens, 5)
-  if (storeNameScore.score > 0) {
-    score += storeNameScore.score
-    addReason('store name')
-  }
-
-  const departments = safeArray(store.departments)
-  let matchedDepartments = 0
-  let matchedSubDepartments = 0
-
-  for (const dept of departments) {
-    const deptNameScore = scoreField(dept.name, queryTokens, 4)
-    const deptNotesScore = scoreField(dept.notes || '', queryTokens, 3)
-
-    const deptScore = deptNameScore.score + deptNotesScore.score
-
-    if (deptScore > 0) {
-      matchedDepartments += 1
-      score += deptScore
-      score += (Number(dept.rating) || 0) * 1.5
-      addReason(dept.name)
-      if (dept.notes?.trim()) addReason(`${dept.name} notes`)
-    }
-
-    for (const sub of safeArray(dept.subDepartments)) {
-      const subNameScore = scoreField(sub.name, queryTokens, 4.5)
-      const subScore = subNameScore.score
-
-      if (subScore > 0) {
-        matchedSubDepartments += 1
-        score += subScore
-        score += (Number(sub.rating) || 0) * 1.25
-        addReason(`${dept.name} → ${sub.name}`)
-      }
-    }
-  }
-
-  if (matchedDepartments > 0 || matchedSubDepartments > 0 || storeNameScore.score > 0) {
-    score += matchedDepartments * 1.5
-    score += matchedSubDepartments * 1
-  }
-
-  return {
-    score,
-    reasons,
-    matchedDepartments,
-    matchedSubDepartments,
-  }
 }
 
 // ---------------- MAIN APP ----------------
@@ -812,7 +738,7 @@ export default function App() {
         />
 
         {searchQuery.trim() && searchResults.length === 0 && (
-          <div className="muted-text">No strong matches yet.</div>
+          <div className="muted-text search-empty">No strong matches yet.</div>
         )}
 
         {searchResults.length > 0 && (
