@@ -1,11 +1,10 @@
+
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
-
-// ---------------- LEAFLET ICON FIX ----------------
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
@@ -21,8 +20,6 @@ if (L.Icon.Default && !L.Icon.Default._patched) {
   L.Icon.Default._patched = true
 }
 
-// ---------------- CONSTANTS ----------------
-
 const PRESET_DEPARTMENTS = [
   'Clothing',
   'Shoes',
@@ -33,6 +30,14 @@ const PRESET_DEPARTMENTS = [
   'Housewares',
   'Media (DVDs/CDs/Records)',
 ]
+
+const PRICE_TIERS = [
+  { value: 'cheap', label: '$ Cheap' },
+  { value: 'average', label: '$$ Average' },
+  { value: 'expensive', label: '$$$ Expensive' },
+]
+
+const EMPTY_ARRAY = []
 
 const EMPTY_FORM = {
   storeName: '',
@@ -303,8 +308,6 @@ const CATEGORY_HINTS = {
   ],
 }
 
-const EMPTY_ARRAY = []
-
 const APP_STYLES = {
   shell: {
     minHeight: '100vh',
@@ -425,6 +428,20 @@ const APP_STYLES = {
     outline: 'none',
     minHeight: '44px',
   },
+  textarea: {
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'rgba(255,255,255,0.07)',
+    color: '#ffffff',
+    padding: '12px 14px',
+    outline: 'none',
+    resize: 'vertical',
+    minHeight: '78px',
+    fontFamily: 'inherit',
+  },
   darkCard: {
     position: 'relative',
     zIndex: 5,
@@ -491,17 +508,6 @@ const layoutCSS = `
     box-sizing: border-box;
   }
 
-  .app-shell .dept-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
-    align-items: center;
-    margin-left: 12px;
-    margin-top: 8px;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
   .app-shell .top-actions {
     display: flex;
     flex-wrap: wrap;
@@ -539,7 +545,7 @@ const layoutCSS = `
     max-width: 100%;
     box-sizing: border-box;
     overflow: hidden;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 18px;
     padding: 12px;
@@ -711,6 +717,42 @@ const layoutCSS = `
     align-items: center;
   }
 
+  .app-shell .category-editor-meta {
+    display: grid;
+    grid-template-columns: 110px 150px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    margin-top: 10px;
+  }
+
+  .app-shell .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .app-shell .field-label {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.84);
+  }
+
+  .app-shell .subdept-card {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .app-shell .subdept-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
   @media (max-width: 768px) {
     .app-shell {
       padding: 12px;
@@ -725,21 +767,12 @@ const layoutCSS = `
       grid-template-columns: 1fr;
     }
 
-    .app-shell .dept-row {
-      grid-template-columns: 1fr;
-      margin-left: 0;
-    }
-
     .app-shell .top-actions {
       align-items: stretch;
     }
 
     .app-shell .map-shell {
       height: 240px;
-    }
-
-    .app-shell .stack-gap > * {
-      width: 100%;
     }
 
     .app-shell fieldset.dept-fieldset {
@@ -764,10 +797,12 @@ const layoutCSS = `
       font-size: 0.95rem !important;
       border-radius: 11px !important;
     }
+
+    .app-shell .category-editor-meta {
+      grid-template-columns: 1fr;
+    }
   }
 `
-
-// ---------------- HELPERS ----------------
 
 function makeId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -807,22 +842,107 @@ function tokenize(value) {
     .filter((t) => !STOP_WORDS.has(t))
 }
 
+function normalizePriceTier(value) {
+  const normalized = normalizeText(value)
+  if (normalized.includes('expensive') || normalized.includes('premium') || normalized.includes('luxury') || normalized.includes('3')) {
+    return 'expensive'
+  }
+  if (normalized.includes('cheap') || normalized.includes('budget') || normalized.includes('affordable') || normalized.includes('1')) {
+    return 'cheap'
+  }
+  return 'average'
+}
+
+function priceLabel(value) {
+  return PRICE_TIERS.find((tier) => tier.value === value)?.label || '$$ Average'
+}
+
+function clampRating(value) {
+  const n = Number(value)
+  if (Number.isFinite(n)) {
+    return String(Math.min(5, Math.max(1, Math.round(n))))
+  }
+  return '3'
+}
+
+function getRatingNumber(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 3
+  return Math.min(5, Math.max(1, n))
+}
+
+function makeEmptySubDepartment(name = '') {
+  return {
+    id: makeId(),
+    name,
+    rating: '3',
+    price: 'average',
+    notes: '',
+  }
+}
+
+function makeEmptyDepartment(name = '') {
+  return {
+    id: makeId(),
+    name,
+    rating: '3',
+    price: 'average',
+    notes: '',
+    subDepartments: [],
+  }
+}
+
+function normalizeCategoryItem(item) {
+  const normalizedSubDepartments = safeArray(item?.subDepartments).map((sub) => normalizeCategoryItem(sub))
+  return {
+    id: item?.id || makeId(),
+    name: String(item?.name || '').trim(),
+    rating: clampRating(item?.rating),
+    price: normalizePriceTier(item?.price),
+    notes: String(item?.notes || ''),
+    subDepartments: normalizedSubDepartments,
+  }
+}
+
+function normalizeStore(store) {
+  const lat = Number(store?.lat)
+  const lng = Number(store?.lng)
+
+  return {
+    id: store?.id || makeId(),
+    name: String(store?.name || '').trim(),
+    address: String(store?.address || ''),
+    lat: Number.isFinite(lat) ? lat : 0,
+    lng: Number.isFinite(lng) ? lng : 0,
+    departments: safeArray(store?.departments).map((dept) => normalizeCategoryItem(dept)),
+  }
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : EMPTY_ARRAY
+}
+
 function buildQueryProfile(query) {
+  const original = String(query || '').toLowerCase()
   const raw = normalizeText(query)
   const tokens = tokenize(query)
   const expandedTokens = new Set(tokens)
   const categoryHints = new Set()
+  const priceHints = new Set()
+
+  if (original.includes('$$$') || raw.includes('expens') || raw.includes('premium') || raw.includes('luxury')) {
+    priceHints.add('expensive')
+  }
+  if (original.includes('$$') || raw.includes('averag') || raw.includes('mid')) {
+    priceHints.add('average')
+  }
+  if (original.includes('$') || raw.includes('cheap') || raw.includes('budget') || raw.includes('afford')) {
+    priceHints.add('cheap')
+  }
 
   for (const token of tokens) {
     for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
-      if (
-        aliases.some(
-          (alias) =>
-            alias === token ||
-            alias.includes(token) ||
-            token.includes(alias)
-        )
-      ) {
+      if (aliases.some((alias) => alias === token || alias.includes(token) || token.includes(alias))) {
         categoryHints.add(categoryKey)
       }
     }
@@ -856,7 +976,7 @@ function buildQueryProfile(query) {
     }
   }
 
-  return { raw, tokens, expandedTokens, categoryHints }
+  return { raw, tokens, expandedTokens, categoryHints, priceHints, original }
 }
 
 function containsLooseMatch(text, queryProfile) {
@@ -927,19 +1047,6 @@ function shortenAddress(address) {
   return city ? `${street}, ${city}` : street
 }
 
-function safeArray(value) {
-  return Array.isArray(value) ? value : EMPTY_ARRAY
-}
-
-function makeEmptyForm() {
-  return {
-    storeName: '',
-    address: '',
-    departments: [],
-    coords: null,
-  }
-}
-
 function calculateStoreSerendipity(store) {
   const departments = safeArray(store.departments)
   const allRatings = []
@@ -963,7 +1070,67 @@ function calculateStoreSerendipity(store) {
   return Math.max(0, Math.min(100, Number(normalized.toFixed(1))))
 }
 
-// ---------------- LOCATION PICKER ----------------
+function CategoryDetailsEditor({
+  score,
+  onScoreChange,
+  price,
+  onPriceChange,
+  notes,
+  onNotesChange,
+  notePlaceholder,
+}) {
+  return (
+    <div className="category-editor-meta">
+      <div className="field-group">
+        <span className="field-label">Score</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[1-5]"
+          maxLength={1}
+          value={score}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const next = e.target.value.replace(/[^1-5]/g, '').slice(0, 1)
+            onScoreChange(next)
+          }}
+          onBlur={() => {
+            if (!String(score || '').trim()) {
+              onScoreChange('3')
+            }
+          }}
+          style={APP_STYLES.input}
+        />
+      </div>
+
+      <div className="field-group">
+        <span className="field-label">Price</span>
+        <select
+          value={price}
+          onChange={(e) => onPriceChange(e.target.value)}
+          style={APP_STYLES.select}
+        >
+          {PRICE_TIERS.map((tier) => (
+            <option key={tier.value} value={tier.value}>
+              {tier.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="field-group">
+        <span className="field-label">Notes</span>
+        <textarea
+          rows={3}
+          placeholder={notePlaceholder}
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          style={APP_STYLES.textarea}
+        />
+      </div>
+    </div>
+  )
+}
 
 function LocationPicker({ value, coords, onChange, placeholder = 'Search a location or address...' }) {
   const [query, setQuery] = useState(value || '')
@@ -1081,8 +1248,6 @@ function LocationPicker({ value, coords, onChange, placeholder = 'Search a locat
   )
 }
 
-// ---------------- MAP CLICK ----------------
-
 function MapClickHandler({ onSelect }) {
   useMapEvents({
     async click(e) {
@@ -1112,8 +1277,6 @@ function MapClickHandler({ onSelect }) {
   return null
 }
 
-// ---------------- MAP VIEW ----------------
-
 function MapView({ stores, onPickLocation }) {
   const center = [28.8, -82.3]
 
@@ -1127,21 +1290,21 @@ function MapView({ stores, onPickLocation }) {
 
         <MapClickHandler onSelect={onPickLocation} />
 
-        {stores.map((store) => (
-          <Marker key={store.id} position={[store.lat, store.lng]}>
-            <Popup>
-              <strong>{store.name}</strong>
-              <br />
-              {store.address}
-            </Popup>
-          </Marker>
-        ))}
+        {stores
+          .filter((store) => Number.isFinite(Number(store.lat)) && Number.isFinite(Number(store.lng)))
+          .map((store) => (
+            <Marker key={store.id} position={[store.lat, store.lng]}>
+              <Popup>
+                <strong>{store.name}</strong>
+                <br />
+                {store.address}
+              </Popup>
+            </Marker>
+          ))}
       </MapContainer>
     </div>
   )
 }
-
-// ---------------- STORE CATEGORY DISPLAY ----------------
 
 function StoreDepartmentsDisplay({ departments }) {
   const safeDepartments = safeArray(departments)
@@ -1149,7 +1312,7 @@ function StoreDepartmentsDisplay({ departments }) {
   if (!safeDepartments.length) {
     return (
       <div style={{ color: '#ffffff', fontSize: '0.95rem', opacity: 0.82 }}>
-        No departments added yet.
+        No categories added yet.
       </div>
     )
   }
@@ -1162,22 +1325,51 @@ function StoreDepartmentsDisplay({ departments }) {
         return (
           <div key={dept.id} style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
-              {dept.name} - {dept.rating}/5
+              {dept.name}
             </div>
 
+            <div className="score-row" style={{ marginTop: 6 }}>
+              <span style={APP_STYLES.badge}>Score {clampRating(dept.rating)}/5</span>
+              <span style={APP_STYLES.badge}>{priceLabel(dept.price)}</span>
+            </div>
+
+            {dept.notes?.trim() && (
+              <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.78)', fontSize: '0.92rem' }}>
+                {dept.notes}
+              </div>
+            )}
+
             {subDepartments.length > 0 && (
-              <div style={{ marginLeft: 16, marginTop: 6 }}>
+              <div style={{ marginLeft: 16, marginTop: 8 }}>
                 {subDepartments.map((sub) => (
                   <div
                     key={sub.id}
                     style={{
-                      fontSize: '0.94rem',
-                      color: '#ffffff',
-                      opacity: 0.82,
-                      lineHeight: 1.35,
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTop: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
-                    {sub.name} - {sub.rating}/5
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.35 }}>
+                      {sub.name}
+                    </div>
+
+                    <div className="score-row" style={{ marginTop: 6 }}>
+                      <span style={APP_STYLES.badge}>Score {clampRating(sub.rating)}/5</span>
+                      <span style={APP_STYLES.badge}>{priceLabel(sub.price)}</span>
+                    </div>
+
+                    {sub.notes?.trim() && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          color: 'rgba(255,255,255,0.74)',
+                          fontSize: '0.9rem',
+                        }}
+                      >
+                        {sub.notes}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1189,31 +1381,41 @@ function StoreDepartmentsDisplay({ departments }) {
   )
 }
 
-// ---------------- DEPARTMENT EDITOR ----------------
-
 function DepartmentEditor({ departments, onChange }) {
   const [customDeptName, setCustomDeptName] = useState('')
+
+  const update = (next) => onChange(next)
 
   const addDepartment = (name) => {
     if (!name.trim()) return
 
-    onChange([
+    update([
       ...departments,
       {
-        id: makeId(),
-        name,
-        rating: 3,
-        subDepartments: [],
+        ...makeEmptyDepartment(name),
+        name: name.trim(),
       },
     ])
   }
 
-  const update = (next) => onChange(next)
-
   const removeDepartment = (id) => update(departments.filter((d) => d.id !== id))
 
-  const updateDeptRating = (id, rating) =>
-    update(departments.map((d) => (d.id === id ? { ...d, rating: Number(rating) } : d)))
+  const updateDepartmentField = (id, field, value) =>
+    update(
+      departments.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              [field]:
+                field === 'rating'
+                  ? clampRating(value)
+                  : field === 'price'
+                    ? normalizePriceTier(value)
+                    : value,
+            }
+          : d
+      )
+    )
 
   const addSubDepartment = (deptId, name) => {
     if (!name.trim()) return
@@ -1222,14 +1424,7 @@ function DepartmentEditor({ departments, onChange }) {
         d.id === deptId
           ? {
               ...d,
-              subDepartments: [
-                ...safeArray(d.subDepartments),
-                {
-                  id: makeId(),
-                  name,
-                  rating: 3,
-                },
-              ],
+              subDepartments: [...safeArray(d.subDepartments), { ...makeEmptySubDepartment(name), name: name.trim() }],
             }
           : d
       )
@@ -1248,14 +1443,24 @@ function DepartmentEditor({ departments, onChange }) {
       )
     )
 
-  const updateSubRating = (deptId, subId, rating) =>
+  const updateSubField = (deptId, subId, field, value) =>
     update(
       departments.map((d) =>
         d.id === deptId
           ? {
               ...d,
               subDepartments: safeArray(d.subDepartments).map((s) =>
-                s.id === subId ? { ...s, rating: Number(rating) } : s
+                s.id === subId
+                  ? {
+                      ...s,
+                      [field]:
+                        field === 'rating'
+                          ? clampRating(value)
+                          : field === 'price'
+                            ? normalizePriceTier(value)
+                            : value,
+                    }
+                  : s
               ),
             }
           : d
@@ -1268,7 +1473,7 @@ function DepartmentEditor({ departments, onChange }) {
         <input
           value={customDeptName}
           onChange={(e) => setCustomDeptName(e.target.value)}
-          placeholder="Custom department"
+          placeholder="Custom category"
           style={APP_STYLES.input}
         />
 
@@ -1305,7 +1510,7 @@ function DepartmentEditor({ departments, onChange }) {
       {departments.map((dept) => (
         <fieldset key={dept.id} className="dept-fieldset">
           <legend>
-            <span>{dept.name}</span>
+            <span>{dept.name || 'Untitled category'}</span>
             <button
               type="button"
               onClick={() => removeDepartment(dept.id)}
@@ -1315,61 +1520,46 @@ function DepartmentEditor({ departments, onChange }) {
             </button>
           </legend>
 
-          <label style={{ display: 'block', marginTop: 8, color: '#ffffff' }}>
-            Rating:{' '}
-            <input
-              type="number"
-              min="1"
-              max="5"
-              value={dept.rating}
-              onChange={(e) => updateDeptRating(dept.id, e.target.value)}
-              style={{
-                width: '72px',
-                marginLeft: 8,
-                ...APP_STYLES.input,
-                padding: '10px 12px',
-              }}
-            />
-          </label>
+          <CategoryDetailsEditor
+            score={dept.rating}
+            onScoreChange={(value) => updateDepartmentField(dept.id, 'rating', value)}
+            price={dept.price}
+            onPriceChange={(value) => updateDepartmentField(dept.id, 'price', value)}
+            notes={dept.notes}
+            onNotesChange={(value) => updateDepartmentField(dept.id, 'notes', value)}
+            notePlaceholder="Brands, rack location, condition, or search clues..."
+          />
 
-          {safeArray(dept.subDepartments).map((sub) => (
-            <div key={sub.id} className="dept-row">
-              <span
-                style={{
-                  minWidth: 0,
-                  overflowWrap: 'anywhere',
-                  color: '#ffffff',
-                }}
-              >
-                {sub.name}
-              </span>
+          <div style={{ marginTop: 12 }}>
+            {safeArray(dept.subDepartments).map((sub) => (
+              <div key={sub.id} className="subdept-card">
+                <div className="subdept-head">
+                  <strong style={{ overflowWrap: 'anywhere' }}>{sub.name || 'Untitled subcategory'}</strong>
+                  <button
+                    type="button"
+                    onClick={() => removeSubDepartment(dept.id, sub.id)}
+                    style={APP_STYLES.buttonSecondary}
+                  >
+                    Remove
+                  </button>
+                </div>
 
-              <input
-                type="number"
-                min="1"
-                max="5"
-                value={sub.rating}
-                onChange={(e) => updateSubRating(dept.id, sub.id, e.target.value)}
-                style={{
-                  width: '72px',
-                  ...APP_STYLES.input,
-                  padding: '10px 12px',
-                }}
-              />
-
-              <button
-                type="button"
-                onClick={() => removeSubDepartment(dept.id, sub.id)}
-                style={APP_STYLES.buttonSecondary}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+                <CategoryDetailsEditor
+                  score={sub.rating}
+                  onScoreChange={(value) => updateSubField(dept.id, sub.id, 'rating', value)}
+                  price={sub.price}
+                  onPriceChange={(value) => updateSubField(dept.id, sub.id, 'price', value)}
+                  notes={sub.notes}
+                  onNotesChange={(value) => updateSubField(dept.id, sub.id, 'notes', value)}
+                  notePlaceholder="Extra clues for this subcategory..."
+                />
+              </div>
+            ))}
+          </div>
 
           <input
             className="subdept-input"
-            placeholder="Add sub-department (press Enter)"
+            placeholder="Add subcategory (press Enter)"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -1377,20 +1567,13 @@ function DepartmentEditor({ departments, onChange }) {
                 e.target.value = ''
               }
             }}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              marginTop: '10px',
-              ...APP_STYLES.input,
-            }}
+            style={APP_STYLES.input}
           />
         </fieldset>
       ))}
     </div>
   )
 }
-
-// ---------------- OPTIONS MENU ----------------
 
 function OptionsMenu({ onView, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
@@ -1493,8 +1676,6 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
   )
 }
 
-// ---------------- RECOMMENDATION ENGINE ----------------
-
 function serendipityScoreStore(store, query) {
   const profile = buildQueryProfile(query)
   let serendipityScore = 0
@@ -1525,7 +1706,7 @@ function serendipityScoreStore(store, query) {
   let ratingBoost = 0
 
   for (const dept of departments) {
-    const deptRating = Number(dept.rating) || 0
+    const deptRating = getRatingNumber(dept.rating)
     const deptKey = resolveCategoryKey(dept.name)
     const deptHintHit = deptKey && profile.categoryHints.has(deptKey)
 
@@ -1539,9 +1720,19 @@ function serendipityScoreStore(store, query) {
     const deptOverlap = tokenOverlapScore(dept.name, profile)
     deptScore += deptOverlap * 3
 
+    if (containsLooseMatch(dept.notes, profile)) {
+      deptScore += 4
+      addReason('notes')
+    }
+
     if (deptHintHit) {
       deptScore += 16
       addReason(dept.name)
+    }
+
+    if (profile.priceHints.has(dept.price)) {
+      deptScore += 5
+      addReason(`${priceLabel(dept.price)} price`)
     }
 
     deptScore += deptRating * 1.75
@@ -1549,7 +1740,7 @@ function serendipityScoreStore(store, query) {
     const subDepartments = safeArray(dept.subDepartments)
 
     for (const sub of subDepartments) {
-      const subRating = Number(sub.rating) || 0
+      const subRating = getRatingNumber(sub.rating)
       let subScore = 0
 
       if (containsLooseMatch(sub.name, profile)) {
@@ -1560,8 +1751,17 @@ function serendipityScoreStore(store, query) {
       const subOverlap = tokenOverlapScore(sub.name, profile)
       subScore += subOverlap * 4
 
+      if (containsLooseMatch(sub.notes, profile)) {
+        subScore += 3
+        addReason('notes')
+      }
+
       if (deptHintHit) {
         subScore += 8
+      }
+
+      if (profile.priceHints.has(sub.price)) {
+        subScore += 4
       }
 
       subScore += subRating * 2
@@ -1596,8 +1796,6 @@ function serendipityScoreStore(store, query) {
     matchedSubDepartments,
   }
 }
-
-// ---------------- FORM PANEL ----------------
 
 function StoreFormPanel({
   title,
@@ -1666,21 +1864,25 @@ function StoreFormPanel({
           </div>
         </div>
 
-        <DepartmentEditor
-          departments={form.departments}
-          onChange={(departments) =>
-            setForm((prev) => ({
-              ...prev,
-              departments,
-            }))
-          }
-        />
+        <div>
+          <div style={{ marginBottom: 8, color: 'rgba(255,255,255,0.74)', fontSize: '0.92rem' }}>
+            Add categories, then give each one a score, price tier, and notes that help future searches.
+          </div>
+
+          <DepartmentEditor
+            departments={form.departments}
+            onChange={(departments) =>
+              setForm((prev) => ({
+                ...prev,
+                departments,
+              }))
+            }
+          />
+        </div>
       </div>
     </form>
   )
 }
-
-// ---------------- STORE PREVIEW ----------------
 
 function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
   if (!store) return null
@@ -1711,7 +1913,7 @@ function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
         <div className="score-row">
           <span style={APP_STYLES.badge}>Store Serendipity</span>
           <span style={APP_STYLES.badge}>
-            {safeArray(store.departments).length} departments
+            {safeArray(store.departments).length} categories
           </span>
         </div>
 
@@ -1734,8 +1936,6 @@ function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
     </div>
   )
 }
-
-// ---------------- HOVER PEEK ----------------
 
 function HoverPeek({ store, onOpen }) {
   if (!store) return null
@@ -1781,14 +1981,12 @@ function HoverPeek({ store, onOpen }) {
   )
 }
 
-// ---------------- MAIN APP ----------------
-
 export default function App() {
   const [stores, setStores] = useState(() => {
     try {
       const saved = localStorage.getItem('stores')
       const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed : []
+      return Array.isArray(parsed) ? parsed.map((store) => normalizeStore(store)) : []
     } catch {
       return []
     }
@@ -1796,10 +1994,10 @@ export default function App() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [createForm, setCreateForm] = useState(makeEmptyForm())
+  const [createForm, setCreateForm] = useState(EMPTY_FORM)
 
   const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState(makeEmptyForm())
+  const [editForm, setEditForm] = useState(EMPTY_FORM)
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
   const [previewStore, setPreviewStore] = useState(null)
@@ -1888,7 +2086,7 @@ export default function App() {
 
   const resetCreate = () => {
     setShowCreateForm(false)
-    setCreateForm(makeEmptyForm())
+    setCreateForm(EMPTY_FORM)
   }
 
   const addStore = async (e) => {
@@ -1922,7 +2120,7 @@ export default function App() {
         address,
         lat: coords.lat,
         lng: coords.lng,
-        departments: createForm.departments,
+        departments: createForm.departments.map((dept) => normalizeCategoryItem(dept)),
       },
     ])
 
@@ -1941,13 +2139,13 @@ export default function App() {
       storeName: store.name,
       address: store.address,
       coords: { lat: store.lat, lng: store.lng },
-      departments: store.departments,
+      departments: safeArray(store.departments).map((dept) => normalizeCategoryItem(dept)),
     })
   }
 
   const cancelEdit = () => {
     setEditId(null)
-    setEditForm(makeEmptyForm())
+    setEditForm(EMPTY_FORM)
   }
 
   const saveEdit = async (e) => {
@@ -1982,14 +2180,14 @@ export default function App() {
               address,
               lat: coords.lat,
               lng: coords.lng,
-              departments: editForm.departments,
+              departments: editForm.departments.map((dept) => normalizeCategoryItem(dept)),
             }
           : s
       )
     )
 
     setEditId(null)
-    setEditForm(makeEmptyForm())
+    setEditForm(EMPTY_FORM)
   }
 
   const deleteStore = (id) => {
@@ -2079,7 +2277,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* SEARCH */}
         <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
           <h2 style={APP_STYLES.sectionTitle}>Search</h2>
 
@@ -2138,10 +2335,8 @@ export default function App() {
           )}
         </div>
 
-        {/* MAP */}
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {/* CREATE BUTTON / PANEL BELOW MAP */}
         {!editId && !showCreateForm && (
           <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }} className="store-card">
             <div className="top-actions">
@@ -2156,7 +2351,6 @@ export default function App() {
           </div>
         )}
 
-        {/* CREATE */}
         {!editId && showCreateForm && (
           <StoreFormPanel
             title="Add Store"
@@ -2168,7 +2362,6 @@ export default function App() {
           />
         )}
 
-        {/* EDIT */}
         {editId && (
           <StoreFormPanel
             title="Edit Store"
@@ -2180,7 +2373,6 @@ export default function App() {
           />
         )}
 
-        {/* INLINE PREVIEW PANEL BELOW THE MAIN FLOW */}
         <StorePreviewPanel
           store={previewStore}
           onClose={() => setPreviewStore(null)}
@@ -2193,7 +2385,6 @@ export default function App() {
         />
       </div>
 
-      {/* DRAWER */}
       {drawerOpen && (
         <>
           <div className="drawer-overlay" onClick={() => setDrawerOpen(false)} />
@@ -2253,7 +2444,7 @@ export default function App() {
                     <div className="score-row">
                       <span style={APP_STYLES.badge}>Store Serendipity</span>
                       <span style={APP_STYLES.badge}>
-                        {safeArray(store.departments).length} departments
+                        {safeArray(store.departments).length} categories
                       </span>
                     </div>
 
@@ -2313,7 +2504,6 @@ export default function App() {
         </>
       )}
 
-      {/* HOVER PEEK */}
       {hoveredStore && !previewStore && !drawerOpen && (
         <HoverPeek store={hoveredStore} onOpen={() => openPreview(hoveredStore)} />
       )}
