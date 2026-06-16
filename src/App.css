@@ -1,131 +1,264 @@
-/* ---------------- BASE ---------------- */
+/* =========================
+   GLOBAL
+========================= */
 
-body {
-  margin: 0;
-  background-color: #313131;
-  font-family: Georgia, 'Times New Roman', serif;
-  color: #1a3c34;
-}
-
-/* optional global reset */
 * {
   box-sizing: border-box;
 }
 
-/* ---------------- APP WRAPPER ---------------- */
-
-.app-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 20px;
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
-/* ---------------- HEADERS (UNIFIED GRAY) ---------------- */
+body {
+  background: #08172b;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================
+   APP
+========================= */
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px;
+}
 
 h1,
 h2,
-h3 {
-  color: #bdbdbd;
-  font-family: Georgia, serif;
+h3,
+h4 {
+  color: white;
+  margin-top: 0;
 }
 
-h1 {
-  text-align: center;
-  color: #bdbdbd; /* same family as others */
-}
+/* =========================
+   INPUTS
+========================= */
 
-/* ---------------- MAP ---------------- */
-
-.leaflet-container {
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* ---------------- STORE CARD ---------------- */
-
-.store-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 10px;
-  background: white;
-}
-
-/* ---------------- FIELDSETS ---------------- */
-
-fieldset {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: white;
-}
-
-legend {
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
+input,
+select,
+textarea {
   width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #3d4f68;
+  background: #102542;
+  color: white;
+  font-size: 16px;
 }
 
-/* ---------------- BUTTONS ---------------- */
+input::placeholder,
+textarea::placeholder {
+  color: #c2c8d1;
+}
+
+select option {
+  background: #102542;
+  color: white;
+}
+
+/* =========================
+   BUTTONS
+========================= */
 
 button {
-  background-color: #1a3c34;
-  color: #f4f9f4;
   border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 8px;
+  padding: 10px 14px;
   cursor: pointer;
-  font-family: inherit;
+  background: #1f6feb;
+  color: white;
+  font-weight: 600;
 }
 
 button:hover {
-  background-color: #14302a;
+  opacity: 0.9;
 }
 
-/* ---------------- FORM LAYOUT ---------------- */
+/* =========================
+   STORE CARDS
+========================= */
 
-.form-box.layout {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-.form-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.form-left input {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-/* right panel */
-.form-right {
-  flex: 1;
-  background: #f5f5f5;
+.store-card {
+  background: #102542;
+  border: 1px solid #223854;
+  border-radius: 12px;
   padding: 12px;
-  border-radius: 10px;
-  max-height: 500px;
-  overflow-y: auto;
+  margin-bottom: 12px;
+  color: white !important;
+  overflow-wrap: break-word;
 }
 
-/* ---------------- MAP PLACEHOLDER (if still used) ---------------- */
+.store-card strong {
+  color: white !important;
+}
 
-.map-placeholder {
-  height: 250px;
-  background-color: #d4e4d4;
-  border: 1px solid #1a3c34;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: #1a3c34;
+.store-card p {
+  color: white !important;
+}
+
+/* =========================
+   FIELDSETS
+========================= */
+
+fieldset {
+  border: 1px solid #2c4668;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+legend {
+  color: white;
+  padding: 0 8px;
+}
+
+/* =========================
+   DEPARTMENT TEXT
+========================= */
+
+.department-rating,
+.subdepartment-rating,
+.hidden-score,
+.category-name {
+  color: white !important;
+}
+
+/* Force all department text white */
+
+fieldset,
+fieldset div,
+fieldset span,
+fieldset label {
+  color: white;
+}
+
+/* =========================
+   MAP
+========================= */
+
+.leaflet-container {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  color: black;
+}
+
+/* =========================
+   SEARCH RESULTS
+========================= */
+
+.search-result {
+  background: #102542;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.search-result strong,
+.search-result div {
+  color: white;
+}
+
+/* =========================
+   OPTIONS MENU
+========================= */
+
+.options-menu {
+  background: #102542;
+  border: 1px solid #2f4b71;
+}
+
+/* =========================
+   SCROLL FIXES
+========================= */
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+table {
+  max-width: 100%;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 1.7rem;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .store-card {
+    padding: 10px;
+  }
+
+  fieldset {
+    padding: 10px;
+  }
+
+  /* Mobile map height */
+  .leaflet-container {
+    height: 320px !important;
+  }
+
+  /* Force stacked layouts */
+  form > div {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+/* =========================
+   SMALL PHONE
+========================= */
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 8px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+
+  .store-card {
+    padding: 8px;
+  }
+
+  .leaflet-container {
+    height: 280px !important;
+  }
 }
