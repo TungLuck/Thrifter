@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 import 'leaflet/dist/leaflet.css'
@@ -558,7 +558,8 @@ const layoutCSS = `
 
   .app-shell .menu-popover {
     position: absolute;
-    right: 0;
+    left: 0;
+    right: auto;
     top: calc(100% + 6px);
     margin-top: 0;
     background: rgba(7,18,34,0.98);
@@ -567,6 +568,7 @@ const layoutCSS = `
     border-radius: 14px;
     z-index: 10;
     min-width: 140px;
+    max-width: min(240px, calc(100vw - 32px));
     overflow: hidden;
     box-shadow: 0 12px 30px rgba(0,0,0,0.28);
   }
@@ -757,6 +759,15 @@ const layoutCSS = `
 
     .app-shell .drawer-panel {
       width: min(92vw, 430px);
+    }
+
+    .app-shell .burger-button {
+      width: 40px !important;
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 0 !important;
+      font-size: 1rem !important;
+      border-radius: 12px !important;
     }
   }
 `
@@ -1573,7 +1584,6 @@ function StoreFormPanel({
       <div className="top-actions" style={{ marginBottom: 12 }}>
         <div>
           <h2 style={APP_STYLES.sectionTitle}>{title}</h2>
-          <div style={APP_STYLES.muted}>Use the location picker or click the map.</div>
         </div>
 
         <button type="button" onClick={onCancel} style={APP_STYLES.buttonSecondary}>
@@ -1644,74 +1654,54 @@ function StoreFormPanel({
 
 // ---------------- STORE PREVIEW ----------------
 
-function StorePreviewModal({ store, onClose, onEdit }) {
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
+function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
   if (!store) return null
 
   const storeSerendipityScore = calculateStoreSerendipity(store)
 
   return (
-    <div
-      style={APP_STYLES.previewOverlay}
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        style={APP_STYLES.previewModal}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="top-actions" style={{ marginBottom: 14 }}>
-          <div>
-            <h2 style={APP_STYLES.sectionTitle}>Store preview</h2>
-            <div style={APP_STYLES.muted}>Isolated view for one saved store.</div>
-          </div>
+    <div ref={previewRef} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+      <div className="top-actions" style={{ marginBottom: 14 }}>
+        <div>
+          <h2 style={APP_STYLES.sectionTitle}>Store preview</h2>
+          <div style={APP_STYLES.muted}>Isolated view for one saved store.</div>
+        </div>
+
+        <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
+          Close
+        </button>
+      </div>
+
+      <div style={APP_STYLES.darkCard}>
+        <div className="store-card-head">
+          <strong className="store-card-title">{store.name}</strong>
+
+          <span style={APP_STYLES.badgeStrong}>
+            {storeSerendipityScore.toFixed(0)}/100
+          </span>
+        </div>
+
+        <div className="score-row">
+          <span style={APP_STYLES.badge}>Store Serendipity</span>
+          <span style={APP_STYLES.badge}>
+            {safeArray(store.departments).length} departments
+          </span>
+        </div>
+
+        <p className="store-card-meta">{store.address}</p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          <button type="button" onClick={onEdit} style={APP_STYLES.buttonPrimary}>
+            Edit Store
+          </button>
 
           <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
-            Close
+            Back
           </button>
         </div>
 
-        <div style={APP_STYLES.darkCard}>
-          <div className="store-card-head">
-            <strong className="store-card-title">{store.name}</strong>
-
-            <span style={APP_STYLES.badgeStrong}>
-              {storeSerendipityScore.toFixed(0)}/100
-            </span>
-          </div>
-
-          <div className="score-row">
-            <span style={APP_STYLES.badge}>Store Serendipity</span>
-            <span style={APP_STYLES.badge}>
-              {safeArray(store.departments).length} departments
-            </span>
-          </div>
-
-          <p className="store-card-meta">{store.address}</p>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-            <button type="button" onClick={onEdit} style={APP_STYLES.buttonPrimary}>
-              Edit Store
-            </button>
-
-            <button type="button" onClick={onClose} style={APP_STYLES.buttonSecondary}>
-              Back
-            </button>
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <StoreDepartmentsDisplay departments={store.departments} />
-          </div>
+        <div style={{ marginTop: 14 }}>
+          <StoreDepartmentsDisplay departments={store.departments} />
         </div>
       </div>
     </div>
@@ -1790,6 +1780,8 @@ export default function App() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+
+  const previewRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem('stores', JSON.stringify(stores))
@@ -1979,6 +1971,14 @@ export default function App() {
     setPreviewStore(store)
     setDrawerOpen(false)
     setHoveredStore(null)
+    setExpandedStoreId(null)
+
+    window.setTimeout(() => {
+      previewRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 50)
   }
 
   return (
@@ -1994,6 +1994,14 @@ export default function App() {
                 className="burger-button"
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Open saved stores menu"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  minHeight: '40px',
+                  padding: 0,
+                  fontSize: '1rem',
+                  borderRadius: '12px',
+                }}
               >
                 ☰
               </button>
@@ -2001,7 +2009,7 @@ export default function App() {
               <div className="header-copy">
                 <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
                 <p style={APP_STYLES.subtitle}>
-                  Search above the map. Saved stores live in the burger menu.
+                  Browse thrift stores, search items, and save locations with notes.
                 </p>
               </div>
             </div>
@@ -2072,24 +2080,14 @@ export default function App() {
 
         {/* CREATE BUTTON / PANEL BELOW MAP */}
         {!editId && !showCreateForm && (
-          <div
-            style={{ ...APP_STYLES.panel, marginBottom: '16px' }}
-            className="store-card"
-          >
+          <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }} className="store-card">
             <div className="top-actions">
-              <div>
-                <h2 style={APP_STYLES.sectionTitle}>Create a Store</h2>
-                <div style={APP_STYLES.muted}>
-                  This sits below the map by design.
-                </div>
-              </div>
-
               <button
                 type="button"
                 onClick={() => setShowCreateForm(true)}
                 style={APP_STYLES.buttonPrimary}
               >
-                Open Create
+                Add Store
               </button>
             </div>
           </div>
@@ -2098,7 +2096,7 @@ export default function App() {
         {/* CREATE */}
         {!editId && showCreateForm && (
           <StoreFormPanel
-            title="Create Store"
+            title="Add Store"
             submitLabel="Create"
             form={createForm}
             setForm={setCreateForm}
@@ -2118,6 +2116,18 @@ export default function App() {
             onCancel={cancelEdit}
           />
         )}
+
+        {/* INLINE PREVIEW PANEL BELOW THE MAIN FLOW */}
+        <StorePreviewPanel
+          store={previewStore}
+          onClose={() => setPreviewStore(null)}
+          onEdit={() => {
+            const target = previewStore
+            setPreviewStore(null)
+            if (target) startEdit(target)
+          }}
+          previewRef={previewRef}
+        />
       </div>
 
       {/* DRAWER */}
@@ -2146,7 +2156,7 @@ export default function App() {
             <div className="store-list">
               {stores.length === 0 && (
                 <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
-                  No stores yet. Use Create Store to add one.
+                  No stores yet. Use Add Store to create one.
                 </p>
               )}
 
@@ -2162,7 +2172,9 @@ export default function App() {
                       cursor: 'pointer',
                     }}
                     onMouseEnter={() => setHoveredStore(store)}
-                    onMouseLeave={() => setHoveredStore((curr) => (curr?.id === store.id ? null : curr))}
+                    onMouseLeave={() =>
+                      setHoveredStore((curr) => (curr?.id === store.id ? null : curr))
+                    }
                     onClick={() => setExpandedStoreId(isOpen ? null : store.id)}
                   >
                     <div className="store-card-head">
@@ -2238,24 +2250,9 @@ export default function App() {
         </>
       )}
 
-      {/* ISOLATED STORE VIEW */}
-      {previewStore && (
-        <StorePreviewModal
-          store={previewStore}
-          onClose={() => setPreviewStore(null)}
-          onEdit={() => {
-            setPreviewStore(null)
-            startEdit(previewStore)
-          }}
-        />
-      )}
-
       {/* HOVER PEEK */}
       {hoveredStore && !previewStore && !drawerOpen && (
-        <HoverPeek
-          store={hoveredStore}
-          onOpen={() => openPreview(hoveredStore)}
-        />
+        <HoverPeek store={hoveredStore} onOpen={() => openPreview(hoveredStore)} />
       )}
     </div>
   )
