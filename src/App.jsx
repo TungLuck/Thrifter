@@ -34,6 +34,54 @@ const PRESET_DEPARTMENTS = [
   'Media (DVDs/CDs/Records)',
 ]
 
+const COMMON_NOTE_SUGGESTIONS = [
+  'pants',
+  'jeans',
+  'shorts',
+  'shirts',
+  'tees',
+  'blouses',
+  'jackets',
+  'coats',
+  'sweaters',
+  'hoodies',
+  'boots',
+  'sneakers',
+  'sandals',
+  'dresses',
+  'skirts',
+  'chairs',
+  'tables',
+  'desk',
+  'couch',
+  'sofa',
+  'lamp',
+  'mug',
+  'bowl',
+  'plates',
+  'pans',
+  'pots',
+  'books',
+  'novels',
+  'DVDs',
+  'records',
+  'vinyl',
+  'toys',
+  'games',
+  'puzzles',
+  'electronics',
+  'phone chargers',
+  'cables',
+  'kitchenware',
+  'home decor',
+  'workwear',
+  'kids clothing',
+  'men’s clothing',
+  'women’s clothing',
+  'formalwear',
+  'casualwear',
+]
+
 const EMPTY_FORM = {
   storeName: '',
   address: '',
@@ -149,9 +197,17 @@ function normalizeStoreRecord(store) {
   }
 }
 
-function scoreField(text, queryTokens, weight) {
+function containsExactTokenMatch(text, queryTokens) {
+  const fieldTokens = tokenize(text)
+  if (!fieldTokens.length || !queryTokens.length) return false
+
+  const fieldSet = new Set(fieldTokens)
+  return queryTokens.some((token) => fieldSet.has(token))
+}
+
+function scoreField(text, queryProfile, weight) {
   const normalized = normalizeText(text)
-  if (!normalized || !queryTokens.length) {
+  if (!normalized || !queryProfile.tokens.length) {
     return { score: 0, matchedTokens: 0 }
   }
 
@@ -164,18 +220,18 @@ function scoreField(text, queryTokens, weight) {
   let score = 0
   let matchedTokens = 0
 
-  for (const token of queryTokens) {
+  for (const token of queryProfile.tokens) {
     if (fieldSet.has(token)) {
       score += weight * 4
       matchedTokens += 1
     }
   }
 
-  if (queryTokens.length > 1 && normalized.includes(queryTokens.join(' '))) {
-    score += weight * 2
+  if (queryProfile.tokens.length > 1 && normalized.includes(queryProfile.raw)) {
+    score += weight * 3
   }
 
-  score += matchedTokens * weight * 0.5
+  score += matchedTokens * weight * 0.6
 
   return { score, matchedTokens }
 }
@@ -227,15 +283,14 @@ function MapClickHandler({ onSelect }) {
   return null
 }
 
-
 // ---------------- MAP VIEW ----------------
 
 function MapView({ stores, onPickLocation }) {
   const center = [28.8, -82.3]
 
   return (
-    <div className="map-wrap">
-      <MapContainer center={center} zoom={10} className="map-container">
+    <div style={{ height: '300px', marginBottom: '20px' }}>
+      <MapContainer center={center} zoom={10} style={{ height: '100%' }}>
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -263,31 +318,65 @@ function StoreDepartmentsDisplay({ departments }) {
   const safeDepartments = safeArray(departments)
 
   if (!safeDepartments.length) {
-    return <div className="muted-text">No departments added yet.</div>
+    return (
+      <div style={{ color: '#667085', fontSize: '0.92rem' }}>
+        No departments added yet.
+      </div>
+    )
   }
 
   return (
-    <div className="dept-display">
+    <div style={{ marginTop: 8 }}>
       {safeDepartments.map((dept) => {
         const subDepartments = safeArray(dept.subDepartments)
 
         return (
-          <div key={dept.id} className="dept-display-block">
-            <div className="dept-title">
+          <div key={dept.id} style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 600 }}>
               {dept.name} - {dept.rating}/5
             </div>
 
             {dept.notes?.trim() && (
-              <div className="dept-note">Notes: {dept.notes}</div>
+              <div
+                style={{
+                  marginTop: 3,
+                  marginLeft: 14,
+                  fontSize: '0.85em',
+                  color: '#667085',
+                  lineHeight: 1.35,
+                }}
+              >
+                Notes: {dept.notes}
+              </div>
             )}
 
             {subDepartments.length > 0 && (
-              <div className="dept-sublist">
+              <div style={{ marginLeft: 16, marginTop: 4 }}>
                 {subDepartments.map((sub) => (
-                  <div key={sub.id} className="dept-subitem">
-                    <div className="dept-subtitle">
+                  <div key={sub.id} style={{ marginBottom: 6 }}>
+                    <div
+                      style={{
+                        fontSize: '0.9em',
+                        color: '#667085',
+                        lineHeight: 1.35,
+                      }}
+                    >
                       {sub.name} - {sub.rating}/5
                     </div>
+
+                    {sub.notes?.trim() && (
+                      <div
+                        style={{
+                          marginTop: 2,
+                          marginLeft: 14,
+                          fontSize: '0.82em',
+                          color: '#98A2B3',
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Notes: {sub.notes}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -338,10 +427,8 @@ function DepartmentEditor({ departments, onChange }) {
       )
     )
 
-  const addSubDepartment = (deptId) => {
-    const name = window.prompt('Sub department name')
-    if (!name || !name.trim()) return
-
+  const addSubDepartment = (deptId, name) => {
+    if (!name.trim()) return
     update(
       departments.map((d) =>
         d.id === deptId
@@ -351,7 +438,7 @@ function DepartmentEditor({ departments, onChange }) {
                 ...safeArray(d.subDepartments),
                 {
                   id: makeId(),
-                  name: name.trim(),
+                  name,
                   rating: 3,
                   notes: '',
                 },
@@ -390,14 +477,38 @@ function DepartmentEditor({ departments, onChange }) {
       )
     )
 
+  const updateSubNotes = (deptId, subId, notes) =>
+    update(
+      departments.map((d) =>
+        d.id === deptId
+          ? {
+              ...d,
+              subDepartments: safeArray(d.subDepartments).map((s) =>
+                s.id === subId ? { ...s, notes } : s
+              ),
+            }
+          : d
+      )
+    )
+
   return (
-    <div className="dept-editor">
-      <div className="dept-toolbar">
+    <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+          gap: '8px',
+          alignItems: 'center',
+          marginBottom: '10px',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
         <input
           value={customDeptName}
           onChange={(e) => setCustomDeptName(e.target.value)}
           placeholder="Custom department"
-          className="text-input"
+          style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
         />
 
         <button
@@ -416,7 +527,7 @@ function DepartmentEditor({ departments, onChange }) {
             if (e.target.value) addDepartment(e.target.value)
             e.target.value = ''
           }}
-          className="text-input"
+          style={{ minWidth: 0, boxSizing: 'border-box' }}
         >
           <option value="" disabled>
             Preset
@@ -429,78 +540,137 @@ function DepartmentEditor({ departments, onChange }) {
         </select>
       </div>
 
-      {departments.map((dept) => {
-        const subDepartments = safeArray(dept.subDepartments)
+      {departments.map((dept) => (
+        <fieldset
+          key={dept.id}
+          style={{
+            maxWidth: '100%',
+            width: '100%',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            marginBottom: '10px',
+          }}
+        >
+          <legend
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              padding: '0 6px',
+              whiteSpace: 'normal',
+            }}
+          >
+            <span style={{ maxWidth: '100%', overflowWrap: 'anywhere' }}>
+              {dept.name}
+            </span>
+            <button type="button" onClick={() => removeDepartment(dept.id)}>
+              Remove
+            </button>
+          </legend>
 
-        return (
-          <div key={dept.id} className="dept-card">
-            <div className="dept-card-top">
-              <strong className="dept-card-name">{dept.name}</strong>
+          <label style={{ display: 'block' }}>
+            Rating:{' '}
+            <input
+              type="number"
+              min="1"
+              max="5"
+              value={dept.rating}
+              onChange={(e) => updateDeptRating(dept.id, e.target.value)}
+              style={{ width: '60px' }}
+            />
+          </label>
 
-              <div className="dept-card-actions">
-                <button type="button" onClick={() => removeDepartment(dept.id)}>
-                  Remove
-                </button>
+          <div style={{ marginTop: 8 }}>
+            <input
+              value={dept.notes || ''}
+              onChange={(e) => updateDeptNotes(dept.id, e.target.value)}
+              placeholder="Department notes / keywords (e.g. pants, workwear)"
+              list="common-note-suggestions"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            />
+          </div>
 
-                <button type="button" onClick={() => addSubDepartment(dept.id)}>
-                  Add
-                </button>
-              </div>
-            </div>
+          {safeArray(dept.subDepartments).map((sub) => (
+            <div
+              key={sub.id}
+              style={{
+                marginLeft: '12px',
+                marginTop: '10px',
+                paddingTop: '8px',
+                borderTop: '1px solid rgba(0,0,0,0.08)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                  gap: '8px',
+                  alignItems: 'center',
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <strong style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                  {sub.name}
+                </strong>
 
-            <div className="dept-edit-row">
-              <label className="rating-row">
-                Rating:
                 <input
                   type="number"
                   min="1"
                   max="5"
-                  value={dept.rating}
-                  onChange={(e) => updateDeptRating(dept.id, e.target.value)}
-                  className="rating-input"
+                  value={sub.rating}
+                  onChange={(e) =>
+                    updateSubRating(dept.id, sub.id, e.target.value)
+                  }
+                  style={{ width: '60px' }}
                 />
-              </label>
 
-              <input
-                value={dept.notes || ''}
-                onChange={(e) => updateDeptNotes(dept.id, e.target.value)}
-                placeholder="Department notes / keywords"
-                className="text-input"
-              />
-            </div>
-
-            {subDepartments.length > 0 && (
-              <div className="subdept-list">
-                {subDepartments.map((sub) => (
-                  <div key={sub.id} className="subdept-card">
-                    <div className="subdept-row">
-                      <strong className="subdept-name">{sub.name}</strong>
-
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={sub.rating}
-                        onChange={(e) =>
-                          updateSubRating(dept.id, sub.id, e.target.value)
-                        }
-                        className="rating-input"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeSubDepartment(dept.id, sub.id)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                <button
+                  type="button"
+                  onClick={() => removeSubDepartment(dept.id, sub.id)}
+                >
+                  Remove
+                </button>
               </div>
-            )}
+
+              <div style={{ marginTop: 6 }}>
+                <input
+                  value={sub.notes || ''}
+                  onChange={(e) =>
+                    updateSubNotes(dept.id, sub.id, e.target.value)
+                  }
+                  placeholder="Subcategory notes / keywords"
+                  list="common-note-suggestions"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+          ))}
+
+          <input
+            placeholder="Add sub-department (Enter)"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addSubDepartment(dept.id, e.target.value)
+                e.target.value = ''
+              }
+            }}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              marginTop: '10px',
+            }}
+          />
+
+          <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+            Suggestions: {COMMON_NOTE_SUGGESTIONS.slice(0, 12).join(', ')}
           </div>
-        )
-      })}
+        </fieldset>
+      ))}
     </div>
   )
 }
@@ -511,7 +681,10 @@ function OptionsMenu({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="options-wrap" onClick={(e) => e.stopPropagation()}>
+    <div
+      style={{ position: 'relative', display: 'inline-block' }}
+      onClick={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -522,16 +695,43 @@ function OptionsMenu({ onEdit, onDelete }) {
 
       {open && (
         <>
-          <div onClick={() => setOpen(false)} className="menu-backdrop" />
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 5 }}
+          />
 
-          <div className="options-menu">
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '100%',
+              marginTop: '4px',
+              background: '#0a1f3c',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '6px',
+              zIndex: 10,
+              minWidth: '120px',
+              overflow: 'hidden',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+            }}
+          >
             <button
               type="button"
               onClick={() => {
                 setOpen(false)
                 onEdit()
               }}
-              className="menu-item"
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: 'white',
+              }}
             >
               Edit
             </button>
@@ -542,7 +742,16 @@ function OptionsMenu({ onEdit, onDelete }) {
                 setOpen(false)
                 onDelete()
               }}
-              className="menu-item menu-delete"
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: '#ff6b6b',
+              }}
             >
               Delete
             </button>
@@ -551,6 +760,98 @@ function OptionsMenu({ onEdit, onDelete }) {
       )}
     </div>
   )
+}
+
+// ---------------- RECOMMENDATION ENGINE ----------------
+
+function scoreStore(store, query) {
+  const q = String(query || '').trim()
+  const queryTokens = tokenize(q)
+
+  if (!q || !queryTokens.length) {
+    return {
+      score: 0,
+      reasons: [],
+      matchedDepartments: 0,
+      matchedSubDepartments: 0,
+    }
+  }
+
+  let score = 0
+  const reasons = []
+  const addReason = (label) => {
+    if (label && !reasons.includes(label)) reasons.push(label)
+  }
+
+  // Store name
+  const storeNameScore = scoreField(store.name, { raw: normalizeText(q), tokens: queryTokens }, 5)
+  if (storeNameScore.score > 0) {
+    score += storeNameScore.score
+    addReason('store name')
+  }
+
+  const departments = safeArray(store.departments)
+  let matchedDepartments = 0
+  let matchedSubDepartments = 0
+
+  for (const dept of departments) {
+    const deptNameScore = scoreField(
+      dept.name,
+      { raw: normalizeText(q), tokens: queryTokens },
+      4
+    )
+    const deptNotesScore = scoreField(
+      dept.notes || '',
+      { raw: normalizeText(q), tokens: queryTokens },
+      3
+    )
+
+    let deptScore = deptNameScore.score + deptNotesScore.score
+
+    if (deptScore > 0) {
+      matchedDepartments += 1
+      score += deptScore
+      score += (Number(dept.rating) || 0) * 1.5
+      addReason(dept.name)
+      if (dept.notes?.trim()) addReason(`${dept.name} notes`)
+    }
+
+    for (const sub of safeArray(dept.subDepartments)) {
+      const subNameScore = scoreField(
+        sub.name,
+        { raw: normalizeText(q), tokens: queryTokens },
+        4.5
+      )
+      const subNotesScore = scoreField(
+        sub.notes || '',
+        { raw: normalizeText(q), tokens: queryTokens },
+        3
+      )
+
+      const subScore = subNameScore.score + subNotesScore.score
+
+      if (subScore > 0) {
+        matchedSubDepartments += 1
+        score += subScore
+        score += (Number(sub.rating) || 0) * 1.25
+        addReason(`${dept.name} → ${sub.name}`)
+        if (sub.notes?.trim()) addReason(`${sub.name} notes`)
+      }
+    }
+  }
+
+  // small breadth bonus only when there is real overlap
+  if (matchedDepartments > 0 || matchedSubDepartments > 0 || storeNameScore.score > 0) {
+    score += matchedDepartments * 1.5
+    score += matchedSubDepartments * 1
+  }
+
+  return {
+    score,
+    reasons,
+    matchedDepartments,
+    matchedSubDepartments,
+  }
 }
 
 // ---------------- MAIN APP ----------------
@@ -728,31 +1029,45 @@ export default function App() {
 
       <MapView stores={stores} onPickLocation={handleMapPick} />
 
+      <datalist id="common-note-suggestions">
+        {COMMON_NOTE_SUGGESTIONS.map((item) => (
+          <option key={item} value={item} />
+        ))}
+      </datalist>
+
       {/* SEARCH */}
-      <div className="search-section">
+      <div style={{ margin: '10px 0 20px' }}>
         <input
-          className="text-input search-input"
+          style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
           placeholder="Search for an item..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
         {searchQuery.trim() && searchResults.length === 0 && (
-          <div className="muted-text search-empty">No strong matches yet.</div>
+          <div style={{ marginTop: 10, color: '#667085' }}>
+            No strong matches yet.
+          </div>
         )}
 
         {searchResults.length > 0 && (
-          <div className="search-results">
+          <div style={{ marginTop: 10 }}>
             <h3>Top Matches</h3>
 
             {searchResults.map((s) => (
               <div key={s.id} className="store-card">
-                <strong className="store-name">{s.name}</strong>
-                <div className="store-address">{shortenAddress(s.address)}</div>
-                <div className="store-score">Score: {s.score.toFixed(1)}</div>
+                <strong style={{ color: '#0a1f3c' }}>{s.name}</strong>
+                <div style={{ color: '#0a1f3c' }}>{shortenAddress(s.address)}</div>
+                <div style={{ color: '#0a1f3c' }}>Score: {s.score.toFixed(1)}</div>
 
                 {s.reasons?.length > 0 && (
-                  <div className="muted-text matches-line">
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: '0.9rem',
+                      color: '#667085',
+                    }}
+                  >
                     Matches: {s.reasons.slice(0, 3).join(' • ')}
                   </div>
                 )}
@@ -765,19 +1080,25 @@ export default function App() {
       {/* CREATE */}
       {!editId && (
         <form onSubmit={addStore}>
-          <div className="form-grid">
-            <div className="form-column">
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+              gap: '16px',
+              alignItems: 'start',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
-                className="text-input"
                 placeholder="Store name"
                 value={createForm.storeName}
                 onChange={(e) =>
                   setCreateForm({ ...createForm, storeName: e.target.value })
                 }
+                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
               <input
-                className="text-input"
                 placeholder="Address"
                 value={createForm.address}
                 onChange={(e) =>
@@ -787,6 +1108,7 @@ export default function App() {
                     coords: null,
                   })
                 }
+                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
               <button type="submit">Add Store</button>
@@ -805,19 +1127,25 @@ export default function App() {
       {/* EDIT */}
       {editId && (
         <form onSubmit={saveEdit}>
-          <div className="form-grid">
-            <div className="form-column">
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+              gap: '16px',
+              alignItems: 'start',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
-                className="text-input"
                 placeholder="Store name"
                 value={editForm.storeName}
                 onChange={(e) =>
                   setEditForm({ ...editForm, storeName: e.target.value })
                 }
+                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
               <input
-                className="text-input"
                 placeholder="Address"
                 value={editForm.address}
                 onChange={(e) =>
@@ -827,9 +1155,10 @@ export default function App() {
                     coords: null,
                   })
                 }
+                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
-              <div className="edit-buttons">
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button type="submit">Save</button>
                 <button type="button" onClick={cancelEdit}>
                   Cancel
@@ -850,20 +1179,26 @@ export default function App() {
       {/* STORE LIST */}
       <h2>Stores</h2>
 
-      {stores.length === 0 && <p className="muted-text">No stores yet.</p>}
+      {stores.length === 0 && <p style={{ color: '#667085' }}>No stores yet.</p>}
 
       {stores.map((store) => (
         <div
           key={store.id}
-          className="store-card clickable"
+          className="store-card"
           onClick={() =>
             setExpandedStoreId(
               expandedStoreId === store.id ? null : store.id
             )
           }
+          style={{
+            cursor: 'pointer',
+            color: '#0a1f3c',
+          }}
         >
-          <div className="store-topline">
-            <strong className="store-name">{store.name}</strong>
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}
+          >
+            <strong style={{ color: '#0a1f3c' }}>{store.name}</strong>
 
             <OptionsMenu
               onEdit={() => startEdit(store)}
@@ -871,10 +1206,12 @@ export default function App() {
             />
           </div>
 
-          <p className="store-address">{shortenAddress(store.address)}</p>
+          <p style={{ marginBottom: 0, color: '#0a1f3c' }}>
+            {shortenAddress(store.address)}
+          </p>
 
           {expandedStoreId === store.id && (
-            <div className="expanded-area">
+            <div style={{ marginTop: 8 }}>
               <StoreDepartmentsDisplay departments={store.departments} />
             </div>
           )}
