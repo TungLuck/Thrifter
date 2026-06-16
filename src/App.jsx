@@ -258,7 +258,6 @@ const CATEGORY_HINTS = {
     'glasses',
     'lamp',
     'lamps',
-    'lamp',
     'decor',
     'decoration',
     'blanket',
@@ -374,17 +373,6 @@ const APP_STYLES = {
     cursor: 'pointer',
     minHeight: '44px',
   },
-  buttonDanger: {
-    appearance: 'none',
-    border: '1px solid rgba(255,255,255,0.16)',
-    borderRadius: '14px',
-    padding: '12px 16px',
-    background: 'rgba(255,82,82,0.16)',
-    color: '#ffffff',
-    fontWeight: 700,
-    cursor: 'pointer',
-    minHeight: '44px',
-  },
   input: {
     width: '100%',
     minWidth: 0,
@@ -448,7 +436,7 @@ const layoutCSS = `
 
   .app-shell .dept-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr auto auto);
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 8px;
     align-items: center;
     margin-left: 12px;
@@ -473,14 +461,6 @@ const layoutCSS = `
   .app-shell .store-list {
     display: grid;
     gap: 12px;
-  }
-
-  .app-shell .card-text {
-    color: #ffffff !important;
-  }
-
-  .app-shell .card-text-muted {
-    color: rgba(255,255,255,0.76) !important;
   }
 
   .app-shell .map-shell {
@@ -547,6 +527,16 @@ const layoutCSS = `
     color: #ff9b9b;
   }
 
+  .app-shell .subdept-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 10px;
+    min-height: 40px;
+    padding: 8px 10px !important;
+    font-size: 0.95rem;
+    border-radius: 12px;
+  }
+
   @media (max-width: 768px) {
     .app-shell {
       padding: 12px;
@@ -580,6 +570,12 @@ const layoutCSS = `
 
     .app-shell fieldset.dept-fieldset {
       padding: 10px;
+    }
+
+    .app-shell .subdept-input {
+      min-height: 38px;
+      padding: 7px 10px !important;
+      font-size: 0.92rem;
     }
   }
 `
@@ -644,7 +640,6 @@ function buildQueryProfile(query) {
       }
     }
 
-    // A few helpful broad expansions for common thrift-item queries
     const extra = {
       lamp: ['housewares'],
       chair: ['furniture'],
@@ -1063,6 +1058,7 @@ function DepartmentEditor({ departments, onChange }) {
           ))}
 
           <input
+            className="subdept-input"
             placeholder="Add sub-department (press Enter)"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -1141,9 +1137,9 @@ function OptionsMenu({ onEdit, onDelete }) {
 
 // ---------------- RECOMMENDATION ENGINE ----------------
 
-function scoreStore(store, query) {
+function serendipityScoreStore(store, query) {
   const profile = buildQueryProfile(query)
-  let score = 0
+  let serendipityScore = 0
   const reasons = []
 
   const addReason = (label) => {
@@ -1151,19 +1147,17 @@ function scoreStore(store, query) {
     if (!reasons.includes(label)) reasons.push(label)
   }
 
-  // Store name should matter a bit, especially if users name stores descriptively.
   const storeNameOverlap = tokenOverlapScore(store.name, profile)
   if (containsLooseMatch(store.name, profile)) {
-    score += 12
+    serendipityScore += 12
     addReason('store name')
   }
   if (storeNameOverlap > 0) {
-    score += storeNameOverlap * 2
+    serendipityScore += storeNameOverlap * 2
   }
 
-  // Address is a weak signal; keep it small.
   if (containsLooseMatch(store.address, profile)) {
-    score += 2
+    serendipityScore += 2
     addReason('address')
   }
 
@@ -1216,33 +1210,29 @@ function scoreStore(store, query) {
 
       if (subScore > 0) {
         matchedSubDepartments += 1
-        score += subScore
+        serendipityScore += subScore
         addReason(`${dept.name} → ${sub.name}`)
       }
     }
 
     if (deptScore > 0) {
       matchedDepartments += 1
-      score += deptScore
+      serendipityScore += deptScore
       ratingBoost += deptRating
       addReason(dept.name)
     }
   }
 
-  // Breadth bonus: stores with multiple relevant departments rank higher.
-  score += matchedDepartments * 2.5
-  score += matchedSubDepartments * 1.25
+  serendipityScore += matchedDepartments * 2.5
+  serendipityScore += matchedSubDepartments * 1.25
+  serendipityScore += ratingBoost * 0.4
 
-  // Small boost for overall store quality if it has decent ratings in matched sections.
-  score += ratingBoost * 0.4
-
-  // Keep score from being too flat by adding a tiny density factor.
   if (matchedDepartments > 0 || matchedSubDepartments > 0) {
-    score += Math.min(6, departments.length * 0.25)
+    serendipityScore += Math.min(6, departments.length * 0.25)
   }
 
   return {
-    score,
+    serendipityScore,
     reasons,
     matchedDepartments,
     matchedSubDepartments,
@@ -1269,6 +1259,7 @@ export default function App() {
   const [editForm, setEditForm] = useState(makeEmptyForm())
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
+  const [showStores, setShowStores] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -1287,17 +1278,15 @@ export default function App() {
 
     const results = stores
       .map((store) => {
-        const scored = scoreStore(store, trimmed)
+        const scored = serendipityScoreStore(store, trimmed)
         return { ...store, ...scored }
       })
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .filter((s) => s.serendipityScore > 0)
+      .sort((a, b) => b.serendipityScore - a.serendipityScore)
       .slice(0, 3)
 
     setSearchResults(results)
   }, [searchQuery, stores])
-
-  // ---------------- GEOCODE ----------------
 
   const geocode = async (addr) => {
     try {
@@ -1322,8 +1311,6 @@ export default function App() {
     setShowCreateForm(false)
     setCreateForm(makeEmptyForm())
   }
-
-  // ---------------- CREATE ----------------
 
   const addStore = async (e) => {
     e.preventDefault()
@@ -1353,13 +1340,13 @@ export default function App() {
     ])
 
     resetCreate()
+    setShowStores(true)
   }
-
-  // ---------------- EDIT ----------------
 
   const startEdit = (store) => {
     setEditId(store.id)
     setShowCreateForm(false)
+    setShowStores(true)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -1425,8 +1412,6 @@ export default function App() {
     }
   }
 
-  // ---------------- UI ----------------
-
   return (
     <div className="app-shell" style={APP_STYLES.shell}>
       <style>{layoutCSS}</style>
@@ -1435,11 +1420,9 @@ export default function App() {
         <div style={APP_STYLES.headerRow}>
           <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
           <p style={APP_STYLES.subtitle}>
-            Tap the map to drop a store pin. Create a store first, then add departments.
+            Search above the map, create stores, then reveal saved stores when you need them.
           </p>
         </div>
-
-        <MapView stores={stores} onPickLocation={handleMapPick} />
 
         {/* SEARCH */}
         <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
@@ -1480,7 +1463,7 @@ export default function App() {
                   </div>
 
                   <div style={{ color: '#ffffff', marginTop: 6 }}>
-                    Score: {s.score.toFixed(1)}
+                    Serendipity Score: {s.serendipityScore.toFixed(1)}
                   </div>
 
                   {s.reasons?.length > 0 && (
@@ -1500,6 +1483,9 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {/* MAP */}
+        <MapView stores={stores} onPickLocation={handleMapPick} />
 
         {/* CREATE / EDIT ACTIONS */}
         {!editId && !showCreateForm && (
@@ -1670,73 +1656,90 @@ export default function App() {
           </form>
         )}
 
-        {/* STORE LIST */}
+        {/* STORES COLLAPSIBLE */}
         <div style={APP_STYLES.panel}>
-          <h2 style={APP_STYLES.sectionTitle}>Stores</h2>
+          <div className="top-actions">
+            <div>
+              <h2 style={APP_STYLES.sectionTitle}>Saved Stores</h2>
+              <div style={APP_STYLES.muted}>
+                Click to show or hide the stores you have already created.
+              </div>
+            </div>
 
-          {stores.length === 0 && (
-            <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
-              No stores yet.
-            </p>
-          )}
+            <button
+              type="button"
+              onClick={() => setShowStores((v) => !v)}
+              style={APP_STYLES.buttonSecondary}
+            >
+              {showStores ? 'Hide Stores' : `Show Stores (${stores.length})`}
+            </button>
+          </div>
 
-          <div className="store-list">
-            {stores.map((store) => (
-              <div
-                key={store.id}
-                style={{
-                  ...APP_STYLES.darkCard,
-                  cursor: 'pointer',
-                }}
-                onClick={() =>
-                  setExpandedStoreId(
-                    expandedStoreId === store.id ? null : store.id
-                  )
-                }
-              >
+          {showStores && (
+            <div style={{ marginTop: 14 }} className="store-list">
+              {stores.length === 0 && (
+                <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
+                  No stores yet.
+                </p>
+              )}
+
+              {stores.map((store) => (
                 <div
+                  key={store.id}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                    alignItems: 'flex-start',
+                    ...APP_STYLES.darkCard,
+                    cursor: 'pointer',
                   }}
+                  onClick={() =>
+                    setExpandedStoreId(
+                      expandedStoreId === store.id ? null : store.id
+                    )
+                  }
                 >
-                  <strong
+                  <div
                     style={{
-                      color: '#ffffff',
-                      fontSize: '1.05rem',
-                      lineHeight: 1.25,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      alignItems: 'flex-start',
                     }}
                   >
-                    {store.name}
-                  </strong>
+                    <strong
+                      style={{
+                        color: '#ffffff',
+                        fontSize: '1.05rem',
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {store.name}
+                    </strong>
 
-                  <OptionsMenu
-                    onEdit={() => startEdit(store)}
-                    onDelete={() => deleteStore(store.id)}
-                  />
-                </div>
-
-                <p
-                  style={{
-                    marginBottom: 0,
-                    color: '#ffffff',
-                    opacity: 0.88,
-                    marginTop: 8,
-                  }}
-                >
-                  {shortenAddress(store.address)}
-                </p>
-
-                {expandedStoreId === store.id && (
-                  <div style={{ marginTop: 10 }}>
-                    <StoreDepartmentsDisplay departments={store.departments} />
+                    <OptionsMenu
+                      onEdit={() => startEdit(store)}
+                      onDelete={() => deleteStore(store.id)}
+                    />
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+
+                  <p
+                    style={{
+                      marginBottom: 0,
+                      color: '#ffffff',
+                      opacity: 0.88,
+                      marginTop: 8,
+                    }}
+                  >
+                    {shortenAddress(store.address)}
+                  </p>
+
+                  {expandedStoreId === store.id && (
+                    <div style={{ marginTop: 10 }}>
+                      <StoreDepartmentsDisplay departments={store.departments} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
