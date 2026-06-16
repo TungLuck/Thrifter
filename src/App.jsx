@@ -306,6 +306,284 @@ const CATEGORY_HINTS = {
 
 const EMPTY_ARRAY = []
 
+const APP_STYLES = {
+  shell: {
+    minHeight: '100vh',
+    background:
+      'radial-gradient(circle at top, rgba(16,48,92,0.96) 0%, rgba(4,10,20,1) 55%, rgba(1,5,12,1) 100%)',
+    color: '#ffffff',
+    padding: '16px',
+    boxSizing: 'border-box',
+  },
+  container: {
+    maxWidth: '1180px',
+    margin: '0 auto',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  headerRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginBottom: '16px',
+  },
+  title: {
+    margin: 0,
+    fontSize: 'clamp(1.8rem, 4vw, 3rem)',
+    lineHeight: 1.05,
+    letterSpacing: '-0.04em',
+    color: '#ffffff',
+  },
+  subtitle: {
+    margin: 0,
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: '0.98rem',
+  },
+  panel: {
+    background: 'rgba(7, 18, 34, 0.92)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: '22px',
+    padding: '14px',
+    boxShadow: '0 16px 38px rgba(0,0,0,0.22)',
+    backdropFilter: 'blur(10px)',
+  },
+  sectionTitle: {
+    margin: '0 0 10px',
+    fontSize: '1.2rem',
+    color: '#ffffff',
+  },
+  buttonPrimary: {
+    appearance: 'none',
+    border: 'none',
+    borderRadius: '14px',
+    padding: '12px 16px',
+    background: '#ffffff',
+    color: '#071427',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
+  buttonSecondary: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.20)',
+    borderRadius: '14px',
+    padding: '12px 16px',
+    background: 'rgba(255,255,255,0.08)',
+    color: '#ffffff',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
+  buttonDanger: {
+    appearance: 'none',
+    border: '1px solid rgba(255,255,255,0.16)',
+    borderRadius: '14px',
+    padding: '12px 16px',
+    background: 'rgba(255,82,82,0.16)',
+    color: '#ffffff',
+    fontWeight: 700,
+    cursor: 'pointer',
+    minHeight: '44px',
+  },
+  input: {
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'rgba(255,255,255,0.07)',
+    color: '#ffffff',
+    padding: '12px 14px',
+    outline: 'none',
+    minHeight: '44px',
+  },
+  select: {
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    borderRadius: '14px',
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'rgba(255,255,255,0.07)',
+    color: '#ffffff',
+    padding: '12px 14px',
+    outline: 'none',
+    minHeight: '44px',
+  },
+  darkCard: {
+    background: 'linear-gradient(180deg, rgba(14,35,64,0.96), rgba(7,18,34,0.96))',
+    color: '#ffffff',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: '20px',
+    padding: '14px',
+    boxShadow: '0 12px 24px rgba(0,0,0,0.18)',
+  },
+  muted: {
+    color: 'rgba(255,255,255,0.72)',
+  },
+}
+
+const layoutCSS = `
+  .app-shell .form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .app-shell .stack-gap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .app-shell .toolbar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-shell .dept-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr auto auto);
+    gap: 8px;
+    align-items: center;
+    margin-left: 12px;
+    margin-top: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-shell .top-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-shell .search-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .app-shell .store-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .app-shell .card-text {
+    color: #ffffff !important;
+  }
+
+  .app-shell .card-text-muted {
+    color: rgba(255,255,255,0.76) !important;
+  }
+
+  .app-shell .map-shell {
+    height: 320px;
+    margin-bottom: 20px;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+
+  .app-shell .map-shell .leaflet-container {
+    height: 100%;
+    width: 100%;
+  }
+
+  .app-shell fieldset.dept-fieldset {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 12px;
+    color: #ffffff;
+  }
+
+  .app-shell fieldset.dept-fieldset > legend {
+    color: #ffffff;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 700;
+  }
+
+  .app-shell .menu-popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    margin-top: 0;
+    background: rgba(7,18,34,0.98);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 14px;
+    z-index: 10;
+    min-width: 140px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+  }
+
+  .app-shell .menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 11px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: white;
+  }
+
+  .app-shell .menu-item-danger {
+    color: #ff9b9b;
+  }
+
+  @media (max-width: 768px) {
+    .app-shell {
+      padding: 12px;
+    }
+
+    .app-shell .form-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .app-shell .toolbar-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .app-shell .dept-row {
+      grid-template-columns: 1fr;
+      margin-left: 0;
+    }
+
+    .app-shell .top-actions {
+      align-items: stretch;
+    }
+
+    .app-shell .map-shell {
+      height: 240px;
+    }
+
+    .app-shell .stack-gap > * {
+      width: 100%;
+    }
+
+    .app-shell fieldset.dept-fieldset {
+      padding: 10px;
+    }
+  }
+`
+
 // ---------------- HELPERS ----------------
 
 function makeId() {
@@ -478,6 +756,15 @@ function safeArray(value) {
   return Array.isArray(value) ? value : EMPTY_ARRAY
 }
 
+function makeEmptyForm() {
+  return {
+    storeName: '',
+    address: '',
+    departments: [],
+    coords: null,
+  }
+}
+
 // ---------------- MAP CLICK ----------------
 
 function MapClickHandler({ onSelect }) {
@@ -515,8 +802,8 @@ function MapView({ stores, onPickLocation }) {
   const center = [28.8, -82.3]
 
   return (
-    <div style={{ height: '300px', marginBottom: '20px' }}>
-      <MapContainer center={center} zoom={10} style={{ height: '100%' }}>
+    <div className="map-shell">
+      <MapContainer center={center} zoom={10} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -545,7 +832,7 @@ function StoreDepartmentsDisplay({ departments }) {
 
   if (!safeDepartments.length) {
     return (
-      <div style={{ color: '#667085', fontSize: '0.92rem' }}>
+      <div style={{ color: '#ffffff', fontSize: '0.95rem', opacity: 0.82 }}>
         No departments added yet.
       </div>
     )
@@ -558,18 +845,25 @@ function StoreDepartmentsDisplay({ departments }) {
 
         return (
           <div key={dept.id} style={{ marginBottom: 12 }}>
-            <div style={{ fontWeight: 600 }}>
+            <div
+              style={{
+                fontWeight: 700,
+                color: '#ffffff',
+                lineHeight: 1.35,
+              }}
+            >
               {dept.name} - {dept.rating}/5
             </div>
 
             {subDepartments.length > 0 && (
-              <div style={{ marginLeft: 16, marginTop: 4 }}>
+              <div style={{ marginLeft: 16, marginTop: 6 }}>
                 {subDepartments.map((sub) => (
                   <div
                     key={sub.id}
                     style={{
-                      fontSize: '0.9em',
-                      color: '#667085',
+                      fontSize: '0.94rem',
+                      color: '#ffffff',
+                      opacity: 0.82,
                       lineHeight: 1.35,
                     }}
                   >
@@ -667,22 +961,12 @@ function DepartmentEditor({ departments, onChange }) {
 
   return (
     <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-          gap: '8px',
-          alignItems: 'center',
-          marginBottom: '10px',
-          maxWidth: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
+      <div className="toolbar-grid">
         <input
           value={customDeptName}
           onChange={(e) => setCustomDeptName(e.target.value)}
           placeholder="Custom department"
-          style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+          style={APP_STYLES.input}
         />
 
         <button
@@ -691,6 +975,7 @@ function DepartmentEditor({ departments, onChange }) {
             addDepartment(customDeptName)
             setCustomDeptName('')
           }}
+          style={APP_STYLES.buttonPrimary}
         >
           Add
         </button>
@@ -701,7 +986,7 @@ function DepartmentEditor({ departments, onChange }) {
             if (e.target.value) addDepartment(e.target.value)
             e.target.value = ''
           }}
-          style={{ minWidth: 0, boxSizing: 'border-box' }}
+          style={APP_STYLES.select}
         >
           <option value="" disabled>
             Preset
@@ -715,23 +1000,15 @@ function DepartmentEditor({ departments, onChange }) {
       </div>
 
       {departments.map((dept) => (
-        <fieldset
-          key={dept.id}
-          style={{
-            maxWidth: '100%',
-            boxSizing: 'border-box',
-            overflow: 'hidden',
-            marginBottom: '10px',
-          }}
-        >
+        <fieldset key={dept.id} className="dept-fieldset">
           <legend>
-            {dept.name}
-            <button type="button" onClick={() => removeDepartment(dept.id)}>
+            <span>{dept.name}</span>
+            <button type="button" onClick={() => removeDepartment(dept.id)} style={APP_STYLES.buttonSecondary}>
               Remove
             </button>
           </legend>
 
-          <label>
+          <label style={{ display: 'block', marginTop: 8, color: '#ffffff' }}>
             Rating:{' '}
             <input
               type="number"
@@ -739,25 +1016,24 @@ function DepartmentEditor({ departments, onChange }) {
               max="5"
               value={dept.rating}
               onChange={(e) => updateDeptRating(dept.id, e.target.value)}
-              style={{ width: '60px' }}
+              style={{
+                width: '72px',
+                marginLeft: 8,
+                ...APP_STYLES.input,
+                padding: '10px 12px',
+              }}
             />
           </label>
 
           {safeArray(dept.subDepartments).map((sub) => (
-            <div
-              key={sub.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-                gap: '8px',
-                alignItems: 'center',
-                marginLeft: '12px',
-                marginTop: '8px',
-                maxWidth: '100%',
-                boxSizing: 'border-box',
-              }}
-            >
-              <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+            <div key={sub.id} className="dept-row">
+              <span
+                style={{
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                  color: '#ffffff',
+                }}
+              >
                 {sub.name}
               </span>
 
@@ -769,12 +1045,17 @@ function DepartmentEditor({ departments, onChange }) {
                 onChange={(e) =>
                   updateSubRating(dept.id, sub.id, e.target.value)
                 }
-                style={{ width: '60px' }}
+                style={{
+                  width: '72px',
+                  ...APP_STYLES.input,
+                  padding: '10px 12px',
+                }}
               />
 
               <button
                 type="button"
                 onClick={() => removeSubDepartment(dept.id, sub.id)}
+                style={APP_STYLES.buttonSecondary}
               >
                 Remove
               </button>
@@ -782,7 +1063,7 @@ function DepartmentEditor({ departments, onChange }) {
           ))}
 
           <input
-            placeholder="Add sub-department (Enter)"
+            placeholder="Add sub-department (press Enter)"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -794,6 +1075,7 @@ function DepartmentEditor({ departments, onChange }) {
               width: '100%',
               boxSizing: 'border-box',
               marginTop: '10px',
+              ...APP_STYLES.input,
             }}
           />
         </fieldset>
@@ -816,6 +1098,7 @@ function OptionsMenu({ onEdit, onDelete }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        style={APP_STYLES.buttonSecondary}
       >
         Options
       </button>
@@ -827,38 +1110,14 @@ function OptionsMenu({ onEdit, onDelete }) {
             style={{ position: 'fixed', inset: 0, zIndex: 5 }}
           />
 
-          <div
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: '100%',
-              marginTop: '4px',
-              background: '#0a1f3c',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '6px',
-              zIndex: 10,
-              minWidth: '120px',
-              overflow: 'hidden',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-            }}
-          >
+          <div className="menu-popover">
             <button
               type="button"
               onClick={() => {
                 setOpen(false)
                 onEdit()
               }}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: 'white',
-              }}
+              className="menu-item"
             >
               Edit
             </button>
@@ -869,16 +1128,7 @@ function OptionsMenu({ onEdit, onDelete }) {
                 setOpen(false)
                 onDelete()
               }}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: '#ff6b6b',
-              }}
+              className="menu-item menu-item-danger"
             >
               Delete
             </button>
@@ -1012,9 +1262,11 @@ export default function App() {
     }
   })
 
-  const [createForm, setCreateForm] = useState(EMPTY_FORM)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [createForm, setCreateForm] = useState(makeEmptyForm())
+
   const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState(EMPTY_FORM)
+  const [editForm, setEditForm] = useState(makeEmptyForm())
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
 
@@ -1066,6 +1318,11 @@ export default function App() {
     }
   }
 
+  const resetCreate = () => {
+    setShowCreateForm(false)
+    setCreateForm(makeEmptyForm())
+  }
+
   // ---------------- CREATE ----------------
 
   const addStore = async (e) => {
@@ -1095,13 +1352,14 @@ export default function App() {
       },
     ])
 
-    setCreateForm(EMPTY_FORM)
+    resetCreate()
   }
 
   // ---------------- EDIT ----------------
 
   const startEdit = (store) => {
     setEditId(store.id)
+    setShowCreateForm(false)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -1112,7 +1370,7 @@ export default function App() {
 
   const cancelEdit = () => {
     setEditId(null)
-    setEditForm(EMPTY_FORM)
+    setEditForm(makeEmptyForm())
   }
 
   const saveEdit = async (e) => {
@@ -1146,7 +1404,7 @@ export default function App() {
     )
 
     setEditId(null)
-    setEditForm(EMPTY_FORM)
+    setEditForm(makeEmptyForm())
   }
 
   const deleteStore = (id) => {
@@ -1157,198 +1415,330 @@ export default function App() {
   }
 
   const handleMapPick = ({ lat, lng, address }) => {
-    const setter = editId ? setEditForm : setCreateForm
-    setter((p) => ({ ...p, address, coords: { lat, lng } }))
+    if (editId) {
+      setEditForm((p) => ({ ...p, address, coords: { lat, lng } }))
+      return
+    }
+
+    if (showCreateForm) {
+      setCreateForm((p) => ({ ...p, address, coords: { lat, lng } }))
+    }
   }
 
   // ---------------- UI ----------------
 
   return (
-    <div className="app-container">
-      <h1>Thrifter Sifter</h1>
+    <div className="app-shell" style={APP_STYLES.shell}>
+      <style>{layoutCSS}</style>
 
-      <MapView stores={stores} onPickLocation={handleMapPick} />
+      <div style={APP_STYLES.container}>
+        <div style={APP_STYLES.headerRow}>
+          <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
+          <p style={APP_STYLES.subtitle}>
+            Tap the map to drop a store pin. Create a store first, then add departments.
+          </p>
+        </div>
 
-      {/* SEARCH */}
-      <div style={{ margin: '10px 0 20px' }}>
-        <input
-          style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-          placeholder="Search for an item..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {searchQuery.trim() && searchResults.length === 0 && (
-          <div style={{ marginTop: 10, color: '#667085' }}>
-            No strong matches yet.
+        {/* SEARCH */}
+        <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+          <h2 style={APP_STYLES.sectionTitle}>Search</h2>
+
+          <input
+            style={APP_STYLES.input}
+            placeholder="Search for an item..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+
+          {searchQuery.trim() && searchResults.length === 0 && (
+            <div style={{ marginTop: 10, color: '#ffffff', opacity: 0.72 }}>
+              No strong matches yet.
+            </div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div style={{ marginTop: 12 }} className="search-list">
+              <h3 style={{ margin: '0 0 4px', color: '#ffffff' }}>Top Matches</h3>
+
+              {searchResults.map((s) => (
+                <div key={s.id} style={APP_STYLES.darkCard}>
+                  <strong
+                    style={{
+                      color: '#ffffff',
+                      fontSize: '1.02rem',
+                      display: 'block',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {s.name}
+                  </strong>
+
+                  <div style={{ color: '#ffffff', opacity: 0.88 }}>
+                    {shortenAddress(s.address)}
+                  </div>
+
+                  <div style={{ color: '#ffffff', marginTop: 6 }}>
+                    Score: {s.score.toFixed(1)}
+                  </div>
+
+                  {s.reasons?.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: '0.92rem',
+                        color: '#ffffff',
+                        opacity: 0.78,
+                      }}
+                    >
+                      Matches: {s.reasons.slice(0, 3).join(' • ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* CREATE / EDIT ACTIONS */}
+        {!editId && !showCreateForm && (
+          <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+            <div className="top-actions">
+              <div>
+                <h2 style={APP_STYLES.sectionTitle}>Create a store</h2>
+                <div style={APP_STYLES.muted}>
+                  Department options will appear after you open Create.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditId(null)
+                  setShowCreateForm(true)
+                }}
+                style={APP_STYLES.buttonPrimary}
+              >
+                Create
+              </button>
+            </div>
           </div>
         )}
 
-        {searchResults.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <h3>Top Matches</h3>
+        {/* CREATE */}
+        {!editId && showCreateForm && (
+          <form onSubmit={addStore} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+            <div className="top-actions" style={{ marginBottom: 12 }}>
+              <div>
+                <h2 style={APP_STYLES.sectionTitle}>Create Store</h2>
+                <div style={APP_STYLES.muted}>
+                  Fill in the store details, then add departments.
+                </div>
+              </div>
 
-            {searchResults.map((s) => (
-              <div key={s.id} className="store-card">
-                <strong style={{ color: '#0a1f3c' }}>{s.name}</strong>
-                <div style={{ color: '#0a1f3c' }}>{shortenAddress(s.address)}</div>
-                <div style={{ color: '#0a1f3c' }}>Score: {s.score.toFixed(1)}</div>
+              <button
+                type="button"
+                onClick={resetCreate}
+                style={APP_STYLES.buttonSecondary}
+              >
+                Cancel
+              </button>
+            </div>
 
-                {s.reasons?.length > 0 && (
-                  <div
+            <div className="form-grid">
+              <div className="stack-gap">
+                <input
+                  placeholder="Store name"
+                  value={createForm.storeName}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, storeName: e.target.value })
+                  }
+                  style={APP_STYLES.input}
+                />
+
+                <input
+                  placeholder="Address"
+                  value={createForm.address}
+                  onChange={(e) =>
+                    setCreateForm({
+                      ...createForm,
+                      address: e.target.value,
+                      coords: null,
+                    })
+                  }
+                  style={APP_STYLES.input}
+                />
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button type="submit" style={APP_STYLES.buttonPrimary}>
+                    Add Store
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCreateForm({
+                        ...createForm,
+                        address: '',
+                        coords: null,
+                      })
+                    }
+                    style={APP_STYLES.buttonSecondary}
+                  >
+                    Clear Address
+                  </button>
+                </div>
+              </div>
+
+              <DepartmentEditor
+                departments={createForm.departments}
+                onChange={(departments) =>
+                  setCreateForm({ ...createForm, departments })
+                }
+              />
+            </div>
+          </form>
+        )}
+
+        {/* EDIT */}
+        {editId && (
+          <form onSubmit={saveEdit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+            <div className="top-actions" style={{ marginBottom: 12 }}>
+              <div>
+                <h2 style={APP_STYLES.sectionTitle}>Edit Store</h2>
+                <div style={APP_STYLES.muted}>
+                  Update the store, then save when you are done.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={cancelEdit}
+                style={APP_STYLES.buttonSecondary}
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="form-grid">
+              <div className="stack-gap">
+                <input
+                  placeholder="Store name"
+                  value={editForm.storeName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, storeName: e.target.value })
+                  }
+                  style={APP_STYLES.input}
+                />
+
+                <input
+                  placeholder="Address"
+                  value={editForm.address}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      address: e.target.value,
+                      coords: null,
+                    })
+                  }
+                  style={APP_STYLES.input}
+                />
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button type="submit" style={APP_STYLES.buttonPrimary}>
+                    Save
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    style={APP_STYLES.buttonSecondary}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              <DepartmentEditor
+                departments={editForm.departments}
+                onChange={(departments) =>
+                  setEditForm({ ...editForm, departments })
+                }
+              />
+            </div>
+          </form>
+        )}
+
+        {/* STORE LIST */}
+        <div style={APP_STYLES.panel}>
+          <h2 style={APP_STYLES.sectionTitle}>Stores</h2>
+
+          {stores.length === 0 && (
+            <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
+              No stores yet.
+            </p>
+          )}
+
+          <div className="store-list">
+            {stores.map((store) => (
+              <div
+                key={store.id}
+                style={{
+                  ...APP_STYLES.darkCard,
+                  cursor: 'pointer',
+                }}
+                onClick={() =>
+                  setExpandedStoreId(
+                    expandedStoreId === store.id ? null : store.id
+                  )
+                }
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <strong
                     style={{
-                      marginTop: 6,
-                      fontSize: '0.9rem',
-                      color: '#667085',
+                      color: '#ffffff',
+                      fontSize: '1.05rem',
+                      lineHeight: 1.25,
                     }}
                   >
-                    Matches: {s.reasons.slice(0, 3).join(' • ')}
+                    {store.name}
+                  </strong>
+
+                  <OptionsMenu
+                    onEdit={() => startEdit(store)}
+                    onDelete={() => deleteStore(store.id)}
+                  />
+                </div>
+
+                <p
+                  style={{
+                    marginBottom: 0,
+                    color: '#ffffff',
+                    opacity: 0.88,
+                    marginTop: 8,
+                  }}
+                >
+                  {shortenAddress(store.address)}
+                </p>
+
+                {expandedStoreId === store.id && (
+                  <div style={{ marginTop: 10 }}>
+                    <StoreDepartmentsDisplay departments={store.departments} />
                   </div>
                 )}
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* CREATE */}
-      {!editId && (
-        <form onSubmit={addStore}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-              gap: '16px',
-              alignItems: 'start',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                placeholder="Store name"
-                value={createForm.storeName}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, storeName: e.target.value })
-                }
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-
-              <input
-                placeholder="Address"
-                value={createForm.address}
-                onChange={(e) =>
-                  setCreateForm({
-                    ...createForm,
-                    address: e.target.value,
-                    coords: null,
-                  })
-                }
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-
-              <button type="submit">Add Store</button>
-            </div>
-
-            <DepartmentEditor
-              departments={createForm.departments}
-              onChange={(departments) =>
-                setCreateForm({ ...createForm, departments })
-              }
-            />
-          </div>
-        </form>
-      )}
-
-      {/* EDIT */}
-      {editId && (
-        <form onSubmit={saveEdit}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-              gap: '16px',
-              alignItems: 'start',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                placeholder="Store name"
-                value={editForm.storeName}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, storeName: e.target.value })
-                }
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-
-              <input
-                placeholder="Address"
-                value={editForm.address}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    address: e.target.value,
-                    coords: null,
-                  })
-                }
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="submit">Save</button>
-                <button type="button" onClick={cancelEdit}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-
-            <DepartmentEditor
-              departments={editForm.departments}
-              onChange={(departments) =>
-                setEditForm({ ...editForm, departments })
-              }
-            />
-          </div>
-        </form>
-      )}
-
-      {/* STORE LIST */}
-      <h2>Stores</h2>
-
-      {stores.length === 0 && <p style={{ color: '#667085' }}>No stores yet.</p>}
-
-      {stores.map((store) => (
-        <div
-          key={store.id}
-          className="store-card"
-          onClick={() =>
-            setExpandedStoreId(
-              expandedStoreId === store.id ? null : store.id
-            )
-          }
-          style={{
-            cursor: 'pointer',
-            color: '#0a1f3c',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <strong style={{ color: '#0a1f3c' }}>{store.name}</strong>
-
-            <OptionsMenu
-              onEdit={() => startEdit(store)}
-              onDelete={() => deleteStore(store.id)}
-            />
-          </div>
-
-          <p style={{ marginBottom: 0, color: '#0a1f3c' }}>
-            {shortenAddress(store.address)}
-          </p>
-
-          {expandedStoreId === store.id && (
-            <div style={{ marginTop: 8 }}>
-              <StoreDepartmentsDisplay departments={store.departments} />
-            </div>
-          )}
         </div>
-      ))}
+      </div>
     </div>
   )
 }
