@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
 import 'leaflet/dist/leaflet.css'
@@ -223,6 +222,9 @@ const CATEGORY_HINTS = {
     'cookbooks',
     'reader',
     'readers',
+    'fiction',
+    'nonfiction',
+    'non-fiction',
   ],
   toys: [
     'toys',
@@ -738,6 +740,12 @@ const layoutCSS = `
     color: rgba(255,255,255,0.84);
   }
 
+  .app-shell .field-help {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.68);
+    line-height: 1.35;
+  }
+
   .app-shell .subdept-card {
     margin-top: 12px;
     padding: 12px;
@@ -751,6 +759,18 @@ const layoutCSS = `
     justify-content: space-between;
     gap: 10px;
     align-items: center;
+  }
+
+  .app-shell .search-result-card {
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .app-shell .search-result-card:hover,
+  .app-shell .search-result-card:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.24);
+    outline: none;
   }
 
   @media (max-width: 768px) {
@@ -844,10 +864,20 @@ function tokenize(value) {
 
 function normalizePriceTier(value) {
   const normalized = normalizeText(value)
-  if (normalized.includes('expensive') || normalized.includes('premium') || normalized.includes('luxury') || normalized.includes('3')) {
+  if (
+    normalized.includes('expensive') ||
+    normalized.includes('premium') ||
+    normalized.includes('luxury') ||
+    normalized.includes('3')
+  ) {
     return 'expensive'
   }
-  if (normalized.includes('cheap') || normalized.includes('budget') || normalized.includes('affordable') || normalized.includes('1')) {
+  if (
+    normalized.includes('cheap') ||
+    normalized.includes('budget') ||
+    normalized.includes('affordable') ||
+    normalized.includes('1')
+  ) {
     return 'cheap'
   }
   return 'average'
@@ -942,7 +972,7 @@ function buildQueryProfile(query) {
 
   for (const token of tokens) {
     for (const [categoryKey, aliases] of Object.entries(CATEGORY_HINTS)) {
-      if (aliases.some((alias) => alias === token || alias.includes(token) || token.includes(alias))) {
+      if (aliases.some((alias) => alias === token)) {
         categoryHints.add(categoryKey)
       }
     }
@@ -960,6 +990,8 @@ function buildQueryProfile(query) {
       laptop: ['electronics'],
       book: ['books'],
       novel: ['books'],
+      fiction: ['books'],
+      nonfiction: ['books'],
       puzzle: ['toys'],
       toy: ['toys'],
       dvd: ['media'],
@@ -992,34 +1024,25 @@ function containsLooseMatch(text, queryProfile) {
   return false
 }
 
-function tokenOverlapScore(text, queryProfile) {
+function tokenizeMatchDetails(text, queryProfile) {
   const textTokens = tokenize(text)
-  if (!textTokens.length || !queryProfile.tokens.length) return 0
+  const matches = []
 
-  let score = 0
-  const matched = new Set()
-
-  for (const textToken of textTokens) {
-    if (queryProfile.expandedTokens.has(textToken)) {
-      matched.add(textToken)
-      score += 3
+  for (const queryToken of queryProfile.tokens) {
+    if (textTokens.includes(queryToken)) {
+      matches.push(queryToken)
       continue
     }
 
-    for (const queryToken of queryProfile.tokens) {
-      if (
-        textToken === queryToken ||
-        textToken.includes(queryToken) ||
-        queryToken.includes(textToken)
-      ) {
-        matched.add(textToken)
-        score += 2
-        break
-      }
+    const partial = textTokens.find(
+      (textToken) => textToken.includes(queryToken) || queryToken.includes(textToken)
+    )
+    if (partial) {
+      matches.push(partial)
     }
   }
 
-  return score + matched.size * 0.5
+  return [...new Set(matches)]
 }
 
 function resolveCategoryKey(label) {
@@ -1082,7 +1105,7 @@ function CategoryDetailsEditor({
   return (
     <div className="category-editor-meta">
       <div className="field-group">
-        <span className="field-label">Score</span>
+        <span className="field-label">Strength</span>
         <input
           type="text"
           inputMode="numeric"
@@ -1101,6 +1124,7 @@ function CategoryDetailsEditor({
           }}
           style={APP_STYLES.input}
         />
+        <div className="field-help">1 = sparse, 3 = decent, 5 = strong.</div>
       </div>
 
       <div className="field-group">
@@ -1116,6 +1140,7 @@ function CategoryDetailsEditor({
             </option>
           ))}
         </select>
+        <div className="field-help">Pick the usual shelf price level for this category.</div>
       </div>
 
       <div className="field-group">
@@ -1127,6 +1152,7 @@ function CategoryDetailsEditor({
           onChange={(e) => onNotesChange(e.target.value)}
           style={APP_STYLES.textarea}
         />
+        <div className="field-help">List items you found, brands, sizes, styles, or keywords.</div>
       </div>
     </div>
   )
@@ -1329,7 +1355,7 @@ function StoreDepartmentsDisplay({ departments }) {
             </div>
 
             <div className="score-row" style={{ marginTop: 6 }}>
-              <span style={APP_STYLES.badge}>Score {clampRating(dept.rating)}/5</span>
+              <span style={APP_STYLES.badge}>Strength {clampRating(dept.rating)}/5</span>
               <span style={APP_STYLES.badge}>{priceLabel(dept.price)}</span>
             </div>
 
@@ -1355,7 +1381,7 @@ function StoreDepartmentsDisplay({ departments }) {
                     </div>
 
                     <div className="score-row" style={{ marginTop: 6 }}>
-                      <span style={APP_STYLES.badge}>Score {clampRating(sub.rating)}/5</span>
+                      <span style={APP_STYLES.badge}>Strength {clampRating(sub.rating)}/5</span>
                       <span style={APP_STYLES.badge}>{priceLabel(sub.price)}</span>
                     </div>
 
@@ -1424,7 +1450,10 @@ function DepartmentEditor({ departments, onChange }) {
         d.id === deptId
           ? {
               ...d,
-              subDepartments: [...safeArray(d.subDepartments), { ...makeEmptySubDepartment(name), name: name.trim() }],
+              subDepartments: [
+                ...safeArray(d.subDepartments),
+                { ...makeEmptySubDepartment(name), name: name.trim() },
+              ],
             }
           : d
       )
@@ -1527,7 +1556,7 @@ function DepartmentEditor({ departments, onChange }) {
             onPriceChange={(value) => updateDepartmentField(dept.id, 'price', value)}
             notes={dept.notes}
             onNotesChange={(value) => updateDepartmentField(dept.id, 'notes', value)}
-            notePlaceholder="Brands, rack location, condition, or search clues..."
+            notePlaceholder="Write actual items, brands, or keywords found here. Example: vinyl records, paperbacks, Levi's jeans."
           />
 
           <div style={{ marginTop: 12 }}>
@@ -1551,7 +1580,7 @@ function DepartmentEditor({ departments, onChange }) {
                   onPriceChange={(value) => updateSubField(dept.id, sub.id, 'price', value)}
                   notes={sub.notes}
                   onNotesChange={(value) => updateSubField(dept.id, sub.id, 'notes', value)}
-                  notePlaceholder="Extra clues for this subcategory..."
+                  notePlaceholder="List items you found in this subcategory. Example: hardcover mysteries, Lego sets, Pyrex bowls."
                 />
               </div>
             ))}
@@ -1676,135 +1705,152 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
   )
 }
 
-function serendipityScoreStore(store, query) {
+function scoreCategoryText(text, queryProfile, label, options = {}) {
+  const { exactWeight = 10, tokenWeight = 3, partialWeight = 1.5, categoryWeight = 0, priceWeight = 0 } = options
+
+  if (!text || !queryProfile.raw) {
+    return { score: 0, matched: [] }
+  }
+
+  const normalized = normalizeText(text)
+  const exactMatch = normalized.includes(queryProfile.raw)
+  const matchedTokens = tokenizeMatchDetails(text, queryProfile)
+  let score = 0
+
+  if (exactMatch) score += exactWeight
+  score += matchedTokens.length * tokenWeight
+
+  for (const token of matchedTokens) {
+    if (!token) continue
+    if (normalized.includes(token)) score += partialWeight
+  }
+
+  if (label && queryProfile.categoryHints.has(label)) {
+    score += categoryWeight
+  }
+
+  if (label && queryProfile.priceHints.has(label)) {
+    score += priceWeight
+  }
+
+  return { score, matched: matchedTokens }
+}
+
+function buildSearchResult(store, query) {
   const profile = buildQueryProfile(query)
-  let serendipityScore = 0
-  const reasons = []
+  const matchPieces = []
+  let score = 0
 
-  const addReason = (label) => {
-    if (!label) return
-    if (!reasons.includes(label)) reasons.push(label)
+  const addPiece = (text) => {
+    if (!text) return
+    if (!matchPieces.includes(text)) matchPieces.push(text)
   }
 
-  const storeNameOverlap = tokenOverlapScore(store.name, profile)
-  if (containsLooseMatch(store.name, profile)) {
-    serendipityScore += 12
-    addReason('store name')
-  }
-  if (storeNameOverlap > 0) {
-    serendipityScore += storeNameOverlap * 2
-  }
-
-  if (containsLooseMatch(store.address, profile)) {
-    serendipityScore += 2
-    addReason('location')
+  const nameMatch = scoreCategoryText(store.name, profile, null, {
+    exactWeight: 28,
+    tokenWeight: 8,
+    partialWeight: 2,
+  })
+  score += nameMatch.score
+  if (nameMatch.score > 0) {
+    addPiece(`Name: ${store.name}`)
   }
 
-  const departments = safeArray(store.departments)
-  let matchedDepartments = 0
-  let matchedSubDepartments = 0
-  let ratingBoost = 0
+  const addressMatch = scoreCategoryText(store.address, profile, null, {
+    exactWeight: 8,
+    tokenWeight: 2,
+    partialWeight: 1,
+  })
+  score += addressMatch.score
+  if (addressMatch.score > 0) {
+    addPiece('Address')
+  }
 
-  for (const dept of departments) {
-    const deptRating = getRatingNumber(dept.rating)
+  for (const dept of safeArray(store.departments)) {
     const deptKey = resolveCategoryKey(dept.name)
-    const deptHintHit = deptKey && profile.categoryHints.has(deptKey)
+    const deptNameMatch = scoreCategoryText(dept.name, profile, deptKey, {
+      exactWeight: 20,
+      tokenWeight: 6,
+      partialWeight: 1.5,
+      categoryWeight: deptKey && profile.categoryHints.has(deptKey) ? 10 : 0,
+    })
 
-    let deptScore = 0
+    const deptNotesMatch = scoreCategoryText(dept.notes, profile, null, {
+      exactWeight: 12,
+      tokenWeight: 4,
+      partialWeight: 1.5,
+    })
 
-    if (containsLooseMatch(dept.name, profile)) {
-      deptScore += 10
-      addReason(dept.name)
+    const deptPriceBonus = profile.priceHints.has(dept.price) ? 4 : 0
+    const deptStrength = getRatingNumber(dept.rating) * 0.9
+
+    if (deptNameMatch.score > 0) {
+      score += deptNameMatch.score + deptStrength + deptPriceBonus
+      addPiece(dept.name)
     }
 
-    const deptOverlap = tokenOverlapScore(dept.name, profile)
-    deptScore += deptOverlap * 3
-
-    if (containsLooseMatch(dept.notes, profile)) {
-      deptScore += 4
-      addReason('notes')
+    if (deptNotesMatch.score > 0) {
+      score += deptNotesMatch.score * 0.95
+      addPiece(`${dept.name} notes`)
     }
 
-    if (deptHintHit) {
-      deptScore += 16
-      addReason(dept.name)
+    if (deptPriceBonus > 0) {
+      addPiece(`${dept.name} ${priceLabel(dept.price)}`)
     }
 
-    if (profile.priceHints.has(dept.price)) {
-      deptScore += 5
-      addReason(`${priceLabel(dept.price)} price`)
-    }
+    for (const sub of safeArray(dept.subDepartments)) {
+      const subKey = resolveCategoryKey(sub.name)
+      const subNameMatch = scoreCategoryText(sub.name, profile, subKey, {
+        exactWeight: 16,
+        tokenWeight: 5,
+        partialWeight: 1,
+        categoryWeight: subKey && profile.categoryHints.has(subKey) ? 8 : 0,
+      })
+      const subNotesMatch = scoreCategoryText(sub.notes, profile, null, {
+        exactWeight: 10,
+        tokenWeight: 3,
+        partialWeight: 1,
+      })
+      const subPriceBonus = profile.priceHints.has(sub.price) ? 3 : 0
+      const subStrength = getRatingNumber(sub.rating) * 0.7
 
-    deptScore += deptRating * 1.75
-
-    const subDepartments = safeArray(dept.subDepartments)
-
-    for (const sub of subDepartments) {
-      const subRating = getRatingNumber(sub.rating)
-      let subScore = 0
-
-      if (containsLooseMatch(sub.name, profile)) {
-        subScore += 8
-        addReason(sub.name)
+      if (subNameMatch.score > 0) {
+        score += subNameMatch.score + subStrength + subPriceBonus
+        addPiece(`${dept.name} → ${sub.name}`)
       }
 
-      const subOverlap = tokenOverlapScore(sub.name, profile)
-      subScore += subOverlap * 4
-
-      if (containsLooseMatch(sub.notes, profile)) {
-        subScore += 3
-        addReason('notes')
+      if (subNotesMatch.score > 0) {
+        score += subNotesMatch.score * 0.85
+        addPiece(`${sub.name} notes`)
       }
 
-      if (deptHintHit) {
-        subScore += 8
+      if (subPriceBonus > 0) {
+        addPiece(`${sub.name} ${priceLabel(sub.price)}`)
       }
-
-      if (profile.priceHints.has(sub.price)) {
-        subScore += 4
-      }
-
-      subScore += subRating * 2
-
-      if (subScore > 0) {
-        matchedSubDepartments += 1
-        serendipityScore += subScore
-        addReason(`${dept.name} → ${sub.name}`)
-      }
-    }
-
-    if (deptScore > 0) {
-      matchedDepartments += 1
-      serendipityScore += deptScore
-      ratingBoost += deptRating
-      addReason(dept.name)
     }
   }
 
-  serendipityScore += matchedDepartments * 2.5
-  serendipityScore += matchedSubDepartments * 1.25
-  serendipityScore += ratingBoost * 0.4
-
-  if (matchedDepartments > 0 || matchedSubDepartments > 0) {
-    serendipityScore += Math.min(6, departments.length * 0.25)
+  if (matchPieces.length === 0 && profile.raw) {
+    return {
+      ...store,
+      searchScore: 0,
+      matchPieces: [],
+      searchSummary: 'No direct match',
+    }
   }
+
+  const capped = Math.max(0, Math.min(100, Number(score.toFixed(1))))
+  const summary = matchPieces.slice(0, 4).join(' • ')
 
   return {
-    serendipityScore,
-    reasons,
-    matchedDepartments,
-    matchedSubDepartments,
+    ...store,
+    searchScore: capped,
+    matchPieces,
+    searchSummary: summary,
   }
 }
 
-function StoreFormPanel({
-  title,
-  submitLabel,
-  form,
-  setForm,
-  onSubmit,
-  onCancel,
-}) {
+function StoreFormPanel({ title, submitLabel, form, setForm, onSubmit, onCancel }) {
   return (
     <form onSubmit={onSubmit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }} className="store-card">
       <div className="top-actions" style={{ marginBottom: 12 }}>
@@ -1866,7 +1912,7 @@ function StoreFormPanel({
 
         <div>
           <div style={{ marginBottom: 8, color: 'rgba(255,255,255,0.74)', fontSize: '0.92rem' }}>
-            Add categories, then give each one a score, price tier, and notes that help future searches.
+            Add categories, then give each one a strength, price tier, and notes for the items you found.
           </div>
 
           <DepartmentEditor
@@ -1911,7 +1957,7 @@ function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
         </div>
 
         <div className="score-row">
-          <span style={APP_STYLES.badge}>Store Serendipity</span>
+          <span style={APP_STYLES.badge}>Store score</span>
           <span style={APP_STYLES.badge}>
             {safeArray(store.departments).length} categories
           </span>
@@ -2007,6 +2053,7 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([])
 
   const previewRef = useRef(null)
+  const searchInputRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem('stores', JSON.stringify(stores))
@@ -2021,25 +2068,16 @@ export default function App() {
     }
 
     const results = stores
-      .map((store) => {
-        const searchScored = serendipityScoreStore(store, trimmed)
-        const storeSerendipityScore = calculateStoreSerendipity(store)
-
-        return {
-          ...store,
-          ...searchScored,
-          storeSerendipityScore,
-        }
-      })
-      .filter((s) => s.serendipityScore > 0)
+      .map((store) => buildSearchResult(store, trimmed))
+      .filter((s) => s.searchScore > 0)
       .sort((a, b) => {
-        if (b.serendipityScore !== a.serendipityScore) {
-          return b.serendipityScore - a.serendipityScore
+        if (b.searchScore !== a.searchScore) {
+          return b.searchScore - a.searchScore
         }
 
-        return b.storeSerendipityScore - a.storeSerendipityScore
+        return calculateStoreSerendipity(b) - calculateStoreSerendipity(a)
       })
-      .slice(0, 3)
+      .slice(0, 5)
 
     setSearchResults(results)
   }, [searchQuery, stores])
@@ -2087,6 +2125,19 @@ export default function App() {
   const resetCreate = () => {
     setShowCreateForm(false)
     setCreateForm(EMPTY_FORM)
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchResults([])
+    searchInputRef.current?.focus()
+  }
+
+  const openStore = (store) => {
+    setPreviewStore(store)
+    setDrawerOpen(false)
+    setHoveredStore(null)
+    setExpandedStoreId(null)
   }
 
   const addStore = async (e) => {
@@ -2214,13 +2265,6 @@ export default function App() {
     }
   }
 
-  const openPreview = (store) => {
-    setPreviewStore(store)
-    setDrawerOpen(false)
-    setHoveredStore(null)
-    setExpandedStoreId(null)
-  }
-
   return (
     <div className="app-shell" style={APP_STYLES.shell}>
       <style>{layoutCSS}</style>
@@ -2280,12 +2324,23 @@ export default function App() {
         <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
           <h2 style={APP_STYLES.sectionTitle}>Search</h2>
 
-          <input
-            style={APP_STYLES.input}
-            placeholder="Search for an item..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              ref={searchInputRef}
+              style={{ ...APP_STYLES.input, flex: '1 1 320px' }}
+              placeholder="Search for an item, brand, or category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+
+            <button type="button" onClick={clearSearch} style={APP_STYLES.buttonSecondary}>
+              Clear Search
+            </button>
+          </div>
+
+          <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.74)', fontSize: '0.92rem' }}>
+            Search looks at store names, category names, notes, and price tiers. Notes should list actual items found.
+          </div>
 
           {searchQuery.trim() && searchResults.length === 0 && (
             <div style={{ marginTop: 10, color: '#ffffff', opacity: 0.72 }}>
@@ -2298,13 +2353,17 @@ export default function App() {
               <h3 style={{ margin: '0 0 4px', color: '#ffffff' }}>Top Matches</h3>
 
               {searchResults.map((s) => (
-                <div key={s.id} style={APP_STYLES.darkCard}>
+                <button
+                  key={s.id}
+                  type="button"
+                  className="search-result-card"
+                  onClick={() => openStore(s)}
+                  style={{ ...APP_STYLES.darkCard, width: '100%', textAlign: 'left', border: 'none' }}
+                >
                   <div className="store-card-head">
                     <strong className="store-card-title">{s.name}</strong>
 
-                    <span style={APP_STYLES.badgeStrong}>
-                      Search {s.serendipityScore.toFixed(1)}
-                    </span>
+                    <span style={APP_STYLES.badgeStrong}>Match {s.searchScore.toFixed(0)}/100</span>
                   </div>
 
                   <div style={{ color: '#ffffff', opacity: 0.88, marginTop: 6 }}>
@@ -2312,12 +2371,13 @@ export default function App() {
                   </div>
 
                   <div className="score-row">
+                    <span style={APP_STYLES.badge}>Store score {calculateStoreSerendipity(s).toFixed(0)}/100</span>
                     <span style={APP_STYLES.badge}>
-                      Store score {s.storeSerendipityScore.toFixed(0)}/100
+                      {safeArray(s.departments).length} categories
                     </span>
                   </div>
 
-                  {s.reasons?.length > 0 && (
+                  {s.searchSummary && (
                     <div
                       style={{
                         marginTop: 6,
@@ -2326,10 +2386,10 @@ export default function App() {
                         opacity: 0.78,
                       }}
                     >
-                      Matches: {s.reasons.slice(0, 3).join(' • ')}
+                      Why it matched: {s.searchSummary}
                     </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -2442,7 +2502,7 @@ export default function App() {
                     <p className="store-card-meta">{shortenAddress(store.address)}</p>
 
                     <div className="score-row">
-                      <span style={APP_STYLES.badge}>Store Serendipity</span>
+                      <span style={APP_STYLES.badge}>Store score</span>
                       <span style={APP_STYLES.badge}>
                         {safeArray(store.departments).length} categories
                       </span>
@@ -2456,13 +2516,13 @@ export default function App() {
                       <button
                         type="button"
                         style={APP_STYLES.buttonTinyPrimary}
-                        onClick={() => openPreview(store)}
+                        onClick={() => openStore(store)}
                       >
                         View
                       </button>
 
                       <OptionsMenu
-                        onView={() => openPreview(store)}
+                        onView={() => openStore(store)}
                         onEdit={() => startEdit(store)}
                         onDelete={() => deleteStore(store.id)}
                       />
@@ -2487,7 +2547,7 @@ export default function App() {
                           <button
                             type="button"
                             style={APP_STYLES.buttonTiny}
-                            onClick={() => openPreview(store)}
+                            onClick={() => openStore(store)}
                           >
                             View
                           </button>
@@ -2505,7 +2565,7 @@ export default function App() {
       )}
 
       {hoveredStore && !previewStore && !drawerOpen && (
-        <HoverPeek store={hoveredStore} onOpen={() => openPreview(hoveredStore)} />
+        <HoverPeek store={hoveredStore} onOpen={() => openStore(hoveredStore)} />
       )}
     </div>
   )
