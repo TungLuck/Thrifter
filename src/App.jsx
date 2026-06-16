@@ -1101,7 +1101,7 @@ function CategoryDetailsEditor({
   onPriceChange,
   notes,
   onNotesChange,
-  notePlaceholder,
+  notePlaceholder = 'List specific items you found',
 }) {
   return (
     <div className="category-editor-meta">
@@ -1320,7 +1320,7 @@ function MapClickHandler({ onSelect }) {
   return null
 }
 
-function MapView({ stores, onPickLocation }) {
+function MapView({ stores, onPickLocation, onOpenStore }) {
   const center = [28.8, -82.3]
 
   return (
@@ -1338,9 +1338,43 @@ function MapView({ stores, onPickLocation }) {
           .map((store) => (
             <Marker key={store.id} position={[store.lat, store.lng]}>
               <Popup>
-                <strong>{store.name}</strong>
-                <br />
-                {store.address}
+                <div style={{ minWidth: 170 }}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenStore?.(store)}
+                    style={{
+                      appearance: 'none',
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      margin: 0,
+                      cursor: 'pointer',
+                      color: '#071427',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      textDecoration: 'underline',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {store.name}
+                  </button>
+
+                  <div style={{ marginTop: 6, fontSize: '0.9rem', lineHeight: 1.35 }}>
+                    {store.address}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenStore?.(store)}
+                    style={{
+                      ...APP_STYLES.buttonTinyPrimary,
+                      width: '100%',
+                      marginTop: 10,
+                    }}
+                  >
+                    Open store
+                  </button>
+                </div>
               </Popup>
             </Marker>
           ))}
@@ -1573,7 +1607,7 @@ function DepartmentEditor({ departments, onChange }) {
             onPriceChange={(value) => updateDepartmentField(dept.id, 'price', value)}
             notes={dept.notes}
             onNotesChange={(value) => updateDepartmentField(dept.id, 'notes', value)}
-            notePlaceholder=""
+            notePlaceholder="List specific items you found"
           />
 
           <div style={{ marginTop: 12 }}>
@@ -1620,7 +1654,7 @@ function DepartmentEditor({ departments, onChange }) {
                   onPriceChange={(value) => updateSubField(dept.id, sub.id, 'price', value)}
                   notes={sub.notes}
                   onNotesChange={(value) => updateSubField(dept.id, sub.id, 'notes', value)}
-                  notePlaceholder=""
+                  notePlaceholder="List specific items you found"
                 />
               </div>
             ))}
@@ -2399,7 +2433,7 @@ export default function App() {
           )}
         </div>
 
-        <MapView stores={stores} onPickLocation={handleMapPick} />
+        <MapView stores={stores} onPickLocation={handleMapPick} onOpenStore={openStore} />
 
         {!editId && !showCreateForm && (
           <div
