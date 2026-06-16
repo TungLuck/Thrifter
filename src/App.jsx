@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
@@ -569,7 +570,7 @@ const layoutCSS = `
     color: white;
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 14px;
-    z-index: 20;
+    z-index: 10050;
     min-width: 140px;
     max-width: min(240px, calc(100vw - 32px));
     overflow: hidden;
@@ -1152,7 +1153,7 @@ function CategoryDetailsEditor({
           onChange={(e) => onNotesChange(e.target.value)}
           style={APP_STYLES.textarea}
         />
-        <div className="field-help">List items you found, brands, sizes, styles, or keywords.</div>
+        <div className="field-help">List actual items you found, plus sizes, styles, or keywords.</div>
       </div>
     </div>
   )
@@ -1162,12 +1163,26 @@ function LocationPicker({ value, coords, onChange, placeholder = 'Search a locat
   const [query, setQuery] = useState(value || '')
   const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [shouldSearch, setShouldSearch] = useState(false)
 
   useEffect(() => {
-    setQuery(value || '')
-  }, [value])
+    const nextValue = value || ''
+
+    if (nextValue !== query) {
+      setQuery(nextValue)
+      setSuggestions([])
+      setLoading(false)
+      setShouldSearch(false)
+    }
+  }, [value, query])
 
   useEffect(() => {
+    if (!shouldSearch) {
+      setSuggestions([])
+      setLoading(false)
+      return
+    }
+
     const trimmed = query.trim()
 
     if (!trimmed) {
@@ -1210,7 +1225,7 @@ function LocationPicker({ value, coords, onChange, placeholder = 'Search a locat
       cancelled = true
       clearTimeout(timeout)
     }
-  }, [query])
+  }, [query, shouldSearch])
 
   const selectSuggestion = (item) => {
     const lat = parseFloat(item.lat)
@@ -1218,6 +1233,7 @@ function LocationPicker({ value, coords, onChange, placeholder = 'Search a locat
 
     setQuery(item.display_name)
     setSuggestions([])
+    setShouldSearch(false)
     onChange({
       address: item.display_name,
       coords: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null,
@@ -1232,6 +1248,7 @@ function LocationPicker({ value, coords, onChange, placeholder = 'Search a locat
         onChange={(e) => {
           const nextValue = e.target.value
           setQuery(nextValue)
+          setShouldSearch(true)
           onChange({
             address: nextValue,
             coords: null,
@@ -1556,7 +1573,7 @@ function DepartmentEditor({ departments, onChange }) {
             onPriceChange={(value) => updateDepartmentField(dept.id, 'price', value)}
             notes={dept.notes}
             onNotesChange={(value) => updateDepartmentField(dept.id, 'notes', value)}
-            notePlaceholder="Write actual items, brands, or keywords found here. Example: vinyl records, paperbacks, Levi's jeans."
+            notePlaceholder="Write actual items, sizes, styles, or keywords found here. Example: vinyl records, paperbacks, denim jeans."
           />
 
           <div style={{ marginTop: 12 }}>
@@ -1580,7 +1597,7 @@ function DepartmentEditor({ departments, onChange }) {
                   onPriceChange={(value) => updateSubField(dept.id, sub.id, 'price', value)}
                   notes={sub.notes}
                   onNotesChange={(value) => updateSubField(dept.id, sub.id, 'notes', value)}
-                  notePlaceholder="List items you found in this subcategory. Example: hardcover mysteries, Lego sets, Pyrex bowls."
+                  notePlaceholder="List items you found in this subcategory. Example: hardcover mysteries, puzzle sets, glass bowls."
                 />
               </div>
             ))}
@@ -1617,7 +1634,7 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
       if (!button) return
 
       const rect = button.getBoundingClientRect()
-      const estimatedWidth = 150
+      const estimatedWidth = 156
       const estimatedHeight = 132
       const margin = 8
 
@@ -1649,23 +1666,21 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
     }
   }, [open])
 
-  return (
-    <div style={{ position: 'relative', display: 'inline-block' }} onClick={(e) => e.stopPropagation()}>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        style={APP_STYLES.buttonTiny}
-      >
-        ⋯
-      </button>
-
-      {open && (
+  const menu = open
+    ? createPortal(
         <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 19 }} />
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 10040 }}
+          />
 
-          <div className="menu-popover" style={menuStyle || { position: 'fixed', top: 0, left: 0 }}>
+          <div
+            className="menu-popover"
+            style={{
+              ...(menuStyle || { position: 'fixed', top: 0, left: 0 }),
+              zIndex: 10050,
+            }}
+          >
             <button
               type="button"
               onClick={() => {
@@ -1699,8 +1714,24 @@ function OptionsMenu({ onView, onEdit, onDelete }) {
               Delete
             </button>
           </div>
-        </>
-      )}
+        </>,
+        document.body
+      )
+    : null
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }} onClick={(e) => e.stopPropagation()}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={APP_STYLES.buttonTiny}
+      >
+        ⋯
+      </button>
+
+      {menu}
     </div>
   )
 }
@@ -1983,50 +2014,6 @@ function StorePreviewPanel({ store, onClose, onEdit, previewRef }) {
   )
 }
 
-function HoverPeek({ store, onOpen }) {
-  if (!store) return null
-
-  const score = calculateStoreSerendipity(store)
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        right: 16,
-        bottom: 16,
-        zIndex: 50,
-        width: 'min(360px, calc(100vw - 32px))',
-        pointerEvents: 'none',
-      }}
-    >
-      <div style={{ ...APP_STYLES.darkCard, pointerEvents: 'none' }}>
-        <div className="store-card-head">
-          <strong className="store-card-title">{store.name}</strong>
-          <span style={APP_STYLES.badgeStrong}>{score.toFixed(0)}/100</span>
-        </div>
-
-        <p className="store-card-meta" style={{ marginBottom: 0 }}>
-          {shortenAddress(store.address)}
-        </p>
-
-        <div style={{ marginTop: 10, fontSize: '0.92rem', color: 'rgba(255,255,255,0.78)' }}>
-          Hover preview
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          <button
-            type="button"
-            onClick={onOpen}
-            style={{ ...APP_STYLES.buttonTinyPrimary, pointerEvents: 'auto' }}
-          >
-            Open
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   const [stores, setStores] = useState(() => {
     try {
@@ -2047,7 +2034,6 @@ export default function App() {
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
   const [previewStore, setPreviewStore] = useState(null)
-  const [hoveredStore, setHoveredStore] = useState(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -2136,7 +2122,6 @@ export default function App() {
   const openStore = (store) => {
     setPreviewStore(store)
     setDrawerOpen(false)
-    setHoveredStore(null)
     setExpandedStoreId(null)
   }
 
@@ -2185,7 +2170,6 @@ export default function App() {
     setDrawerOpen(false)
     setExpandedStoreId(null)
     setPreviewStore(null)
-    setHoveredStore(null)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -2248,9 +2232,6 @@ export default function App() {
     }
     if (previewStore?.id === id) {
       setPreviewStore(null)
-    }
-    if (hoveredStore?.id === id) {
-      setHoveredStore(null)
     }
   }
 
@@ -2328,7 +2309,7 @@ export default function App() {
             <input
               ref={searchInputRef}
               style={{ ...APP_STYLES.input, flex: '1 1 320px' }}
-              placeholder="Search for an item, brand, or category..."
+              placeholder="Search for an item or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -2339,7 +2320,7 @@ export default function App() {
           </div>
 
           <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.74)', fontSize: '0.92rem' }}>
-            Search looks at store names, category names, notes, and price tiers. Notes should list actual items found.
+            Search looks at store names, categories, and notes and lists stores most likely to carry the item
           </div>
 
           {searchQuery.trim() && searchResults.length === 0 && (
@@ -2485,10 +2466,6 @@ export default function App() {
                       ...APP_STYLES.darkCard,
                       cursor: 'pointer',
                     }}
-                    onMouseEnter={() => setHoveredStore(store)}
-                    onMouseLeave={() =>
-                      setHoveredStore((curr) => (curr?.id === store.id ? null : curr))
-                    }
                     onClick={() => setExpandedStoreId(isOpen ? null : store.id)}
                   >
                     <div className="store-card-head">
@@ -2564,9 +2541,6 @@ export default function App() {
         </>
       )}
 
-      {hoveredStore && !previewStore && !drawerOpen && (
-        <HoverPeek store={hoveredStore} onOpen={() => openStore(hoveredStore)} />
-      )}
     </div>
   )
 }
