@@ -1487,15 +1487,12 @@ export default function App() {
         {/* MAP */}
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {/* CREATE / EDIT ACTIONS */}
+        {/* ADD / EDIT ACTIONS */}
         {!editId && !showCreateForm && (
           <div style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
             <div className="top-actions">
               <div>
-                <h2 style={APP_STYLES.sectionTitle}>Create a store</h2>
-                <div style={APP_STYLES.muted}>
-                  Department options will appear after you open Create.
-                </div>
+                <h2 style={APP_STYLES.sectionTitle}>Add a store</h2>
               </div>
 
               <button
@@ -1506,7 +1503,7 @@ export default function App() {
                 }}
                 style={APP_STYLES.buttonPrimary}
               >
-                Create
+                Add
               </button>
             </div>
           </div>
@@ -1517,10 +1514,7 @@ export default function App() {
           <form onSubmit={addStore} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
             <div className="top-actions" style={{ marginBottom: 12 }}>
               <div>
-                <h2 style={APP_STYLES.sectionTitle}>Create Store</h2>
-                <div style={APP_STYLES.muted}>
-                  Fill in the store details, then add departments.
-                </div>
+                <h2 style={APP_STYLES.sectionTitle}>Add Store</h2>
               </div>
 
               <button
@@ -1558,7 +1552,7 @@ export default function App() {
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <button type="submit" style={APP_STYLES.buttonPrimary}>
-                    Add Store
+                    Finish
                   </button>
 
                   <button
@@ -1593,9 +1587,6 @@ export default function App() {
             <div className="top-actions" style={{ marginBottom: 12 }}>
               <div>
                 <h2 style={APP_STYLES.sectionTitle}>Edit Store</h2>
-                <div style={APP_STYLES.muted}>
-                  Update the store, then save when you are done.
-                </div>
               </div>
 
               <button
@@ -1633,7 +1624,7 @@ export default function App() {
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <button type="submit" style={APP_STYLES.buttonPrimary}>
-                    Save
+                    Finish
                   </button>
 
                   <button
@@ -1683,61 +1674,82 @@ export default function App() {
                 </p>
               )}
 
-              {stores.map((store) => (
-                <div
-                  key={store.id}
-                  style={{
-                    ...APP_STYLES.darkCard,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() =>
-                    setExpandedStoreId(
-                      expandedStoreId === store.id ? null : store.id
-                    )
-                  }
-                >
+              {stores.map((store) => {
+                const isOpen = expandedStoreId === store.id
+
+                return (
                   <div
+                    key={store.id}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 10,
-                      alignItems: 'flex-start',
+                      ...APP_STYLES.darkCard,
+                      cursor: 'pointer',
                     }}
+                    onClick={() =>
+                      setExpandedStoreId(isOpen ? null : store.id)
+                    }
                   >
-                    <strong
+                    <div
                       style={{
-                        color: '#ffffff',
-                        fontSize: '1.05rem',
-                        lineHeight: 1.25,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        alignItems: 'flex-start',
                       }}
                     >
-                      {store.name}
-                    </strong>
+                      <strong
+                        style={{
+                          color: '#ffffff',
+                          fontSize: '1.05rem',
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {store.name}
+                      </strong>
 
-                    <OptionsMenu
-                      onEdit={() => startEdit(store)}
-                      onDelete={() => deleteStore(store.id)}
-                    />
-                  </div>
-
-                  <p
-                    style={{
-                      marginBottom: 0,
-                      color: '#ffffff',
-                      opacity: 0.88,
-                      marginTop: 8,
-                    }}
-                  >
-                    {shortenAddress(store.address)}
-                  </p>
-
-                  {expandedStoreId === store.id && (
-                    <div style={{ marginTop: 10 }}>
-                      <StoreDepartmentsDisplay departments={store.departments} />
+                      <span style={{ color: '#ffffff', opacity: 0.8 }}>
+                        {isOpen ? '▲' : '▼'}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    <p
+                      style={{
+                        marginBottom: 0,
+                        color: '#ffffff',
+                        opacity: 0.88,
+                        marginTop: 8,
+                      }}
+                    >
+                      {shortenAddress(store.address)}
+                    </p>
+
+                    {isOpen && (
+                      <div style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                            alignItems: 'center',
+                            marginBottom: 10,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <div style={{ color: '#ffffff', fontWeight: 700 }}>
+                            Store details
+                          </div>
+
+                          <OptionsMenu
+                            onEdit={() => startEdit(store)}
+                            onDelete={() => deleteStore(store.id)}
+                          />
+                        </div>
+
+                        <StoreDepartmentsDisplay departments={store.departments} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
