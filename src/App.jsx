@@ -340,7 +340,7 @@ const APP_STYLES = {
   },
   panel: {
     position: 'relative',
-    zIndex: 2,
+    zIndex: 5,
     background: 'rgba(7, 18, 34, 0.92)',
     border: '1px solid rgba(255,255,255,0.10)',
     borderRadius: '22px',
@@ -379,26 +379,26 @@ const APP_STYLES = {
     appearance: 'none',
     border: '1px solid rgba(255,255,255,0.18)',
     borderRadius: '10px',
-    padding: '7px 10px',
+    padding: '6px 9px',
     background: 'rgba(255,255,255,0.08)',
     color: '#ffffff',
     fontWeight: 700,
     cursor: 'pointer',
-    minHeight: '32px',
-    fontSize: '0.82rem',
+    minHeight: '30px',
+    fontSize: '0.8rem',
     lineHeight: 1,
   },
   buttonTinyPrimary: {
     appearance: 'none',
     border: 'none',
     borderRadius: '10px',
-    padding: '7px 10px',
+    padding: '6px 9px',
     background: '#ffffff',
     color: '#071427',
     fontWeight: 800,
     cursor: 'pointer',
-    minHeight: '32px',
-    fontSize: '0.82rem',
+    minHeight: '30px',
+    fontSize: '0.8rem',
     lineHeight: 1,
   },
   input: {
@@ -427,7 +427,7 @@ const APP_STYLES = {
   },
   darkCard: {
     position: 'relative',
-    zIndex: 1,
+    zIndex: 5,
     background: 'linear-gradient(180deg, rgba(14,35,64,0.96), rgba(7,18,34,0.96))',
     color: '#ffffff',
     border: '1px solid rgba(255,255,255,0.10)',
@@ -465,64 +465,49 @@ const APP_STYLES = {
     lineHeight: 1,
     whiteSpace: 'nowrap',
   },
-  previewOverlay: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 60,
-    background: 'rgba(0,0,0,0.55)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px',
-  },
-  previewModal: {
-    width: 'min(720px, 100%)',
-    maxHeight: '90vh',
-    overflow: 'auto',
-    background: 'rgba(7,18,34,0.98)',
-    border: '1px solid rgba(255,255,255,0.16)',
-    borderRadius: '24px',
-    boxShadow: '0 24px 60px rgba(0,0,0,0.40)',
-    padding: '18px',
-    boxSizing: 'border-box',
-  },
 }
 
 const layoutCSS = `
-  .app-shell .header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .app-shell .form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
   }
 
-  .app-shell .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .app-shell .burger-button {
-    appearance: none;
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 14px;
-    background: rgba(255,255,255,0.08);
-    color: white;
-    width: 48px;
-    height: 48px;
-    font-size: 1.15rem;
-    font-weight: 700;
-    cursor: pointer;
-    flex: 0 0 auto;
-  }
-
-  .app-shell .header-copy {
+  .app-shell .stack-gap {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    min-width: 0;
+    gap: 10px;
+  }
+
+  .app-shell .toolbar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-shell .dept-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin-left: 12px;
+    margin-top: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-shell .top-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .app-shell .search-list {
@@ -548,48 +533,6 @@ const layoutCSS = `
   .app-shell .map-shell .leaflet-container {
     height: 100%;
     width: 100%;
-  }
-
-  .app-shell .form-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 16px;
-    align-items: start;
-  }
-
-  .app-shell .stack-gap {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .app-shell .top-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .app-shell .dept-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
-    align-items: center;
-    margin-left: 12px;
-    margin-top: 8px;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  .app-shell .toolbar-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
-    max-width: 100%;
-    box-sizing: border-box;
   }
 
   .app-shell fieldset.dept-fieldset {
@@ -818,7 +761,7 @@ const layoutCSS = `
   }
 `
 
-// ---------------- HELPERS ----------------
+// ---------------- HELPER FUNCTIONS ----------------
 
 function makeId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -1212,13 +1155,7 @@ function StoreDepartmentsDisplay({ departments }) {
 
         return (
           <div key={dept.id} style={{ marginBottom: 12 }}>
-            <div
-              style={{
-                fontWeight: 700,
-                color: '#ffffff',
-                lineHeight: 1.35,
-              }}
-            >
+            <div style={{ fontWeight: 700, color: '#ffffff', lineHeight: 1.35 }}>
               {dept.name} - {dept.rating}/5
             </div>
 
@@ -1270,11 +1207,7 @@ function DepartmentEditor({ departments, onChange }) {
   const removeDepartment = (id) => update(departments.filter((d) => d.id !== id))
 
   const updateDeptRating = (id, rating) =>
-    update(
-      departments.map((d) =>
-        d.id === id ? { ...d, rating: Number(rating) } : d
-      )
-    )
+    update(departments.map((d) => (d.id === id ? { ...d, rating: Number(rating) } : d)))
 
   const addSubDepartment = (deptId, name) => {
     if (!name.trim()) return
@@ -1453,7 +1386,7 @@ function DepartmentEditor({ departments, onChange }) {
 
 // ---------------- OPTIONS MENU ----------------
 
-function OptionsMenu({ onEdit, onDelete }) {
+function OptionsMenu({ onView, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -1467,7 +1400,7 @@ function OptionsMenu({ onEdit, onDelete }) {
         aria-expanded={open}
         style={APP_STYLES.buttonTiny}
       >
-        Options
+        ⋯
       </button>
 
       {open && (
@@ -1478,6 +1411,17 @@ function OptionsMenu({ onEdit, onDelete }) {
           />
 
           <div className="menu-popover">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                onView()
+              }}
+              className="menu-item"
+            >
+              View
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -1621,7 +1565,11 @@ function StoreFormPanel({
   onCancel,
 }) {
   return (
-    <form onSubmit={onSubmit} style={{ ...APP_STYLES.panel, marginBottom: '16px' }}>
+    <form
+      onSubmit={onSubmit}
+      style={{ ...APP_STYLES.panel, marginBottom: '16px' }}
+      className="store-card"
+    >
       <div className="top-actions" style={{ marginBottom: 12 }}>
         <div>
           <h2 style={APP_STYLES.sectionTitle}>{title}</h2>
@@ -1724,7 +1672,7 @@ function StorePreviewModal({ store, onClose, onEdit }) {
       >
         <div className="top-actions" style={{ marginBottom: 14 }}>
           <div>
-            <h2 style={{ ...APP_STYLES.sectionTitle, marginBottom: 6 }}>Store preview</h2>
+            <h2 style={APP_STYLES.sectionTitle}>Store preview</h2>
             <div style={APP_STYLES.muted}>Isolated view for one saved store.</div>
           </div>
 
@@ -1770,6 +1718,52 @@ function StorePreviewModal({ store, onClose, onEdit }) {
   )
 }
 
+// ---------------- HOVER PEEK ----------------
+
+function HoverPeek({ store, onOpen }) {
+  if (!store) return null
+
+  const score = calculateStoreSerendipity(store)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        right: 16,
+        bottom: 16,
+        zIndex: 50,
+        width: 'min(360px, calc(100vw - 32px))',
+        pointerEvents: 'none',
+      }}
+    >
+      <div style={{ ...APP_STYLES.darkCard, pointerEvents: 'none' }}>
+        <div className="store-card-head">
+          <strong className="store-card-title">{store.name}</strong>
+          <span style={APP_STYLES.badgeStrong}>{score.toFixed(0)}/100</span>
+        </div>
+
+        <p className="store-card-meta" style={{ marginBottom: 0 }}>
+          {shortenAddress(store.address)}
+        </p>
+
+        <div style={{ marginTop: 10, fontSize: '0.92rem', color: 'rgba(255,255,255,0.78)' }}>
+          Hover preview
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={onOpen}
+            style={{ ...APP_STYLES.buttonTinyPrimary, pointerEvents: 'auto' }}
+          >
+            Open
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---------------- MAIN APP ----------------
 
 export default function App() {
@@ -1792,6 +1786,7 @@ export default function App() {
 
   const [expandedStoreId, setExpandedStoreId] = useState(null)
   const [previewStore, setPreviewStore] = useState(null)
+  const [hoveredStore, setHoveredStore] = useState(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -1900,6 +1895,7 @@ export default function App() {
     setDrawerOpen(false)
     setExpandedStoreId(null)
     setPreviewStore(null)
+    setHoveredStore(null)
     setEditForm({
       storeName: store.name,
       address: store.address,
@@ -1963,17 +1959,26 @@ export default function App() {
     if (previewStore?.id === id) {
       setPreviewStore(null)
     }
+    if (hoveredStore?.id === id) {
+      setHoveredStore(null)
+    }
   }
 
   const handleMapPick = ({ lat, lng, address }) => {
     if (editId) {
-      setEditForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
+      setEditForm((p) => ({ ...p, address, coords: { lat, lng } }))
       return
     }
 
     if (showCreateForm) {
-      setCreateForm((prev) => ({ ...prev, address, coords: { lat, lng } }))
+      setCreateForm((p) => ({ ...p, address, coords: { lat, lng } }))
     }
+  }
+
+  const openPreview = (store) => {
+    setPreviewStore(store)
+    setDrawerOpen(false)
+    setHoveredStore(null)
   }
 
   return (
@@ -1996,21 +2001,10 @@ export default function App() {
               <div className="header-copy">
                 <h1 style={APP_STYLES.title}>Thrifter Sifter</h1>
                 <p style={APP_STYLES.subtitle}>
-                  Search above the map, then use the burger menu for saved stores.
+                  Search above the map. Saved stores live in the burger menu.
                 </p>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (editId) cancelEdit()
-                setShowCreateForm((v) => !v)
-              }}
-              style={APP_STYLES.buttonPrimary}
-            >
-              {showCreateForm ? 'Close Create' : 'Create Store'}
-            </button>
           </div>
         </div>
 
@@ -2076,7 +2070,32 @@ export default function App() {
         {/* MAP */}
         <MapView stores={stores} onPickLocation={handleMapPick} />
 
-        {/* CREATE — stays below search and map */}
+        {/* CREATE BUTTON / PANEL BELOW MAP */}
+        {!editId && !showCreateForm && (
+          <div
+            style={{ ...APP_STYLES.panel, marginBottom: '16px' }}
+            className="store-card"
+          >
+            <div className="top-actions">
+              <div>
+                <h2 style={APP_STYLES.sectionTitle}>Create a Store</h2>
+                <div style={APP_STYLES.muted}>
+                  This sits below the map by design.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                style={APP_STYLES.buttonPrimary}
+              >
+                Open Create
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CREATE */}
         {!editId && showCreateForm && (
           <StoreFormPanel
             title="Create Store"
@@ -2088,7 +2107,7 @@ export default function App() {
           />
         )}
 
-        {/* EDIT — also below search and map */}
+        {/* EDIT */}
         {editId && (
           <StoreFormPanel
             title="Edit Store"
@@ -2099,143 +2118,145 @@ export default function App() {
             onCancel={cancelEdit}
           />
         )}
+      </div>
 
-        {/* DRAWER */}
-        {drawerOpen && (
-          <>
-            <div
-              className="drawer-overlay"
-              onClick={() => setDrawerOpen(false)}
-            />
+      {/* DRAWER */}
+      {drawerOpen && (
+        <>
+          <div className="drawer-overlay" onClick={() => setDrawerOpen(false)} />
 
-            <aside className="drawer-panel">
-              <div className="drawer-header">
-                <div>
-                  <h2 style={APP_STYLES.sectionTitle}>Saved Stores</h2>
-                  <p style={APP_STYLES.muted}>
-                    {stores.length} saved {stores.length === 1 ? 'store' : 'stores'}.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setDrawerOpen(false)}
-                  style={APP_STYLES.buttonSecondary}
-                >
-                  Close
-                </button>
+          <aside className="drawer-panel">
+            <div className="drawer-header">
+              <div>
+                <h2 style={APP_STYLES.sectionTitle}>Saved Stores</h2>
+                <p style={APP_STYLES.muted}>
+                  {stores.length} saved {stores.length === 1 ? 'store' : 'stores'}.
+                </p>
               </div>
 
-              <div className="store-list">
-                {stores.length === 0 && (
-                  <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
-                    No stores yet. Use Create Store to add one.
-                  </p>
-                )}
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                style={APP_STYLES.buttonSecondary}
+              >
+                Close
+              </button>
+            </div>
 
-                {stores.map((store) => {
-                  const isOpen = expandedStoreId === store.id
-                  const storeSerendipityScore = calculateStoreSerendipity(store)
+            <div className="store-list">
+              {stores.length === 0 && (
+                <p style={{ color: '#ffffff', opacity: 0.75, marginTop: 0 }}>
+                  No stores yet. Use Create Store to add one.
+                </p>
+              )}
 
-                  return (
+              {stores.map((store) => {
+                const isOpen = expandedStoreId === store.id
+                const storeSerendipityScore = calculateStoreSerendipity(store)
+
+                return (
+                  <div
+                    key={store.id}
+                    style={{
+                      ...APP_STYLES.darkCard,
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={() => setHoveredStore(store)}
+                    onMouseLeave={() => setHoveredStore((curr) => (curr?.id === store.id ? null : curr))}
+                    onClick={() => setExpandedStoreId(isOpen ? null : store.id)}
+                  >
+                    <div className="store-card-head">
+                      <strong className="store-card-title">{store.name}</strong>
+
+                      <span style={APP_STYLES.badgeStrong}>
+                        {storeSerendipityScore.toFixed(0)}/100
+                      </span>
+                    </div>
+
+                    <p className="store-card-meta">{shortenAddress(store.address)}</p>
+
+                    <div className="score-row">
+                      <span style={APP_STYLES.badge}>Store Serendipity</span>
+                      <span style={APP_STYLES.badge}>
+                        {safeArray(store.departments).length} departments
+                      </span>
+                    </div>
+
                     <div
-                      key={store.id}
-                      style={{
-                        ...APP_STYLES.darkCard,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() =>
-                        setExpandedStoreId(isOpen ? null : store.id)
-                      }
+                      className="store-card-actions"
+                      style={{ marginTop: 10 }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="store-card-head">
-                        <strong className="store-card-title">{store.name}</strong>
+                      <button
+                        type="button"
+                        style={APP_STYLES.buttonTinyPrimary}
+                        onClick={() => openPreview(store)}
+                      >
+                        View
+                      </button>
 
-                        <span style={APP_STYLES.badgeStrong}>
-                          {storeSerendipityScore.toFixed(0)}/100
-                        </span>
-                      </div>
+                      <OptionsMenu
+                        onView={() => openPreview(store)}
+                        onEdit={() => startEdit(store)}
+                        onDelete={() => deleteStore(store.id)}
+                      />
+                    </div>
 
-                      <p className="store-card-meta">{shortenAddress(store.address)}</p>
-
-                      <div className="score-row">
-                        <span style={APP_STYLES.badge}>
-                          Store Serendipity
-                        </span>
-                        <span style={APP_STYLES.badge}>
-                          {safeArray(store.departments).length} departments
-                        </span>
-                      </div>
-
-                      <div className="store-card-actions" style={{ marginTop: 10 }}>
-                        <button
-                          type="button"
-                          style={APP_STYLES.buttonTinyPrimary}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setPreviewStore(store)
+                    {isOpen && (
+                      <div style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                            alignItems: 'center',
+                            marginBottom: 10,
+                            flexWrap: 'wrap',
                           }}
                         >
-                          View
-                        </button>
-
-                        <OptionsMenu
-                          onEdit={() => startEdit(store)}
-                          onDelete={() => deleteStore(store.id)}
-                        />
-                      </div>
-
-                      {isOpen && (
-                        <div
-                          style={{ marginTop: 12 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              gap: 10,
-                              alignItems: 'center',
-                              marginBottom: 10,
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            <div style={{ color: '#ffffff', fontWeight: 700 }}>
-                              Store details
-                            </div>
-
-                            <button
-                              type="button"
-                              style={APP_STYLES.buttonTiny}
-                              onClick={() => setPreviewStore(store)}
-                            >
-                              View
-                            </button>
+                          <div style={{ color: '#ffffff', fontWeight: 700 }}>
+                            Store details
                           </div>
 
-                          <StoreDepartmentsDisplay departments={store.departments} />
+                          <button
+                            type="button"
+                            style={APP_STYLES.buttonTiny}
+                            onClick={() => openPreview(store)}
+                          >
+                            View
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </aside>
-          </>
-        )}
 
-        {/* ISOLATED STORE VIEW */}
-        {previewStore && (
-          <StorePreviewModal
-            store={previewStore}
-            onClose={() => setPreviewStore(null)}
-            onEdit={() => {
-              setPreviewStore(null)
-              startEdit(previewStore)
-            }}
-          />
-        )}
-      </div>
+                        <StoreDepartmentsDisplay departments={store.departments} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* ISOLATED STORE VIEW */}
+      {previewStore && (
+        <StorePreviewModal
+          store={previewStore}
+          onClose={() => setPreviewStore(null)}
+          onEdit={() => {
+            setPreviewStore(null)
+            startEdit(previewStore)
+          }}
+        />
+      )}
+
+      {/* HOVER PEEK */}
+      {hoveredStore && !previewStore && !drawerOpen && (
+        <HoverPeek
+          store={hoveredStore}
+          onOpen={() => openPreview(hoveredStore)}
+        />
+      )}
     </div>
   )
 }
