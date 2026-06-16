@@ -39,7 +39,6 @@ const EMPTY_FORM = {
   address: '',
   departments: [],
   coords: null,
-  treasureScore: 5,
 }
 
 const STOP_WORDS = new Set([
@@ -120,16 +119,6 @@ function safeArray(value) {
   return Array.isArray(value) ? value : EMPTY_ARRAY
 }
 
-function normalizeTreasureScore(value) {
-  const n = Number(value)
-  if (!Number.isFinite(n)) return 5
-  return Math.min(10, Math.max(1, n))
-}
-
-function formatTreasureScore(value) {
-  return `${normalizeTreasureScore(value)}/10`
-}
-
 function normalizeDepartmentRecord(dept) {
   const safeDept = dept || {}
 
@@ -156,7 +145,6 @@ function normalizeStoreRecord(store) {
     address: safeStore.address || '',
     lat: Number(safeStore.lat) || 0,
     lng: Number(safeStore.lng) || 0,
-    treasureScore: normalizeTreasureScore(safeStore.treasureScore),
     departments: safeArray(safeStore.departments).map(normalizeDepartmentRecord),
   }
 }
@@ -198,9 +186,7 @@ function shortenAddress(address) {
   if (parts.length <= 2) return address
 
   const street =
-    parts[0].match(/^\d+$/) && parts[1]
-      ? `${parts[0]} ${parts[1]}`
-      : parts[0]
+    parts[0].match(/^\d+$/) && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]
 
   const city =
     parts.slice(1).find((p) => p && !/^\d+$/.test(p)) || parts[1] || ''
@@ -245,8 +231,8 @@ function MapView({ stores, onPickLocation }) {
   const center = [28.8, -82.3]
 
   return (
-    <div style={{ height: '300px', marginBottom: '20px' }}>
-      <MapContainer center={center} zoom={10} style={{ height: '100%' }}>
+    <div className="map-wrap">
+      <MapContainer center={center} zoom={10} className="map-container">
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -274,49 +260,29 @@ function StoreDepartmentsDisplay({ departments }) {
   const safeDepartments = safeArray(departments)
 
   if (!safeDepartments.length) {
-    return (
-      <div style={{ color: '#667085', fontSize: '0.92rem' }}>
-        No departments added yet.
-      </div>
-    )
+    return <div className="muted-text">No departments added yet.</div>
   }
 
   return (
-    <div style={{ marginTop: 8 }}>
+    <div className="dept-display">
       {safeDepartments.map((dept) => {
         const subDepartments = safeArray(dept.subDepartments)
 
         return (
-          <div key={dept.id} style={{ marginBottom: 12 }}>
-            <div style={{ fontWeight: 600 }}>
+          <div key={dept.id} className="dept-display-block">
+            <div className="dept-title">
               {dept.name} - {dept.rating}/5
             </div>
 
             {dept.notes?.trim() && (
-              <div
-                style={{
-                  marginTop: 3,
-                  marginLeft: 14,
-                  fontSize: '0.85em',
-                  color: '#667085',
-                  lineHeight: 1.35,
-                }}
-              >
-                Common items: {dept.notes}
-              </div>
+              <div className="dept-note">Notes: {dept.notes}</div>
             )}
 
             {subDepartments.length > 0 && (
-              <div style={{ marginLeft: 16, marginTop: 4 }}>
+              <div className="dept-sublist">
                 {subDepartments.map((sub) => (
-                  <div key={sub.id} style={{ marginBottom: 6 }}>
-                    <div
-                      style={{
-                        fontSize: '0.9em',
-                        color: '#667085',
-                        lineHeight: 1.35,
-                      }}
-                    >
+                  <div key={sub.id} className="dept-subitem">
+                    <div className="dept-subtitle">
                       {sub.name} - {sub.rating}/5
                     </div>
                   </div>
@@ -422,23 +388,13 @@ function DepartmentEditor({ departments, onChange }) {
     )
 
   return (
-    <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-          gap: '8px',
-          alignItems: 'center',
-          marginBottom: '10px',
-          maxWidth: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
+    <div className="dept-editor">
+      <div className="dept-toolbar">
         <input
           value={customDeptName}
           onChange={(e) => setCustomDeptName(e.target.value)}
           placeholder="Custom department"
-          style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+          className="text-input"
         />
 
         <button
@@ -457,7 +413,7 @@ function DepartmentEditor({ departments, onChange }) {
             if (e.target.value) addDepartment(e.target.value)
             e.target.value = ''
           }}
-          style={{ minWidth: 0, boxSizing: 'border-box' }}
+          className="text-input"
         >
           <option value="" disabled>
             Preset
@@ -474,50 +430,11 @@ function DepartmentEditor({ departments, onChange }) {
         const subDepartments = safeArray(dept.subDepartments)
 
         return (
-          <div
-            key={dept.id}
-            style={{
-              maxWidth: '100%',
-              width: '100%',
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-              marginBottom: '10px',
-              border: '1px solid rgba(0,0,0,0.15)',
-              borderRadius: '6px',
-              padding: '10px',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '12px',
-                maxWidth: '100%',
-                boxSizing: 'border-box',
-              }}
-            >
-              <strong
-                className="editor-heading"
-                style={{
-                  flex: '1 1 auto',
-                  minWidth: 0,
-                  overflowWrap: 'anywhere',
-                  lineHeight: 1.25,
-                  color: 'var(--editor-heading-color, #ffffff)',
-                }}
-              >
-                {dept.name}
-              </strong>
+          <div key={dept.id} className="dept-card">
+            <div className="dept-card-top">
+              <strong className="dept-card-name">{dept.name}</strong>
 
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  flex: '0 0 auto',
-                }}
-              >
+              <div className="dept-card-actions">
                 <button type="button" onClick={() => removeDepartment(dept.id)}>
                   Remove
                 </button>
@@ -528,75 +445,33 @@ function DepartmentEditor({ departments, onChange }) {
               </div>
             </div>
 
-            <div style={{ marginTop: 8 }}>
-              <label style={{ display: 'block', marginBottom: 6 }}>
-                Rating:{' '}
+            <div className="dept-edit-row">
+              <label className="rating-row">
+                Rating:
                 <input
                   type="number"
                   min="1"
                   max="5"
                   value={dept.rating}
                   onChange={(e) => updateDeptRating(dept.id, e.target.value)}
-                  style={{ width: '60px' }}
+                  className="rating-input"
                 />
               </label>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: 4 }}>
-                  Common items
-                </label>
-                <div
-                  style={{
-                    marginBottom: 6,
-                    fontSize: '0.82rem',
-                    color: '#667085',
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Examples: jeans, novels, pots etc.
-                </div>
-                <textarea
-                  value={dept.notes || ''}
-                  onChange={(e) => updateDeptNotes(dept.id, e.target.value)}
-                  placeholder="jeans, novels, pots..."
-                  rows={2}
-                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }}
-                />
-              </div>
+              <input
+                value={dept.notes || ''}
+                onChange={(e) => updateDeptNotes(dept.id, e.target.value)}
+                placeholder="Department notes / keywords"
+                className="text-input"
+              />
             </div>
 
             {subDepartments.length > 0 && (
-              <div style={{ marginTop: 10 }}>
+              <div className="subdept-list">
                 {subDepartments.map((sub) => (
-                  <div
-                    key={sub.id}
-                    style={{
-                      marginLeft: '12px',
-                      marginTop: '10px',
-                      paddingTop: '8px',
-                      borderTop: '1px solid rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-                        gap: '8px',
-                        alignItems: 'center',
-                        maxWidth: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      <strong
-                        className="editor-heading"
-                        style={{
-                          minWidth: 0,
-                          overflowWrap: 'anywhere',
-                          color: 'var(--editor-heading-color, #ffffff)',
-                        }}
-                      >
-                        {sub.name}
-                      </strong>
+                  <div key={sub.id} className="subdept-card">
+                    <div className="subdept-row">
+                      <strong className="subdept-name">{sub.name}</strong>
 
                       <input
                         type="number"
@@ -606,7 +481,7 @@ function DepartmentEditor({ departments, onChange }) {
                         onChange={(e) =>
                           updateSubRating(dept.id, sub.id, e.target.value)
                         }
-                        style={{ width: '60px' }}
+                        className="rating-input"
                       />
 
                       <button
@@ -634,7 +509,7 @@ function OptionsMenu({ onEdit, onDelete }) {
 
   return (
     <div
-      style={{ position: 'relative', display: 'inline-block' }}
+      className="options-wrap"
       onClick={(e) => e.stopPropagation()}
     >
       <button
@@ -649,41 +524,17 @@ function OptionsMenu({ onEdit, onDelete }) {
         <>
           <div
             onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 5 }}
+            className="menu-backdrop"
           />
 
-          <div
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: '100%',
-              marginTop: '4px',
-              background: '#0a1f3c',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '6px',
-              zIndex: 10,
-              minWidth: '120px',
-              overflow: 'hidden',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-            }}
-          >
+          <div className="options-menu">
             <button
               type="button"
               onClick={() => {
                 setOpen(false)
                 onEdit()
               }}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: 'white',
-              }}
+              className="menu-item"
             >
               Edit
             </button>
@@ -694,16 +545,7 @@ function OptionsMenu({ onEdit, onDelete }) {
                 setOpen(false)
                 onDelete()
               }}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: '#ff6b6b',
-              }}
+              className="menu-item menu-delete"
             >
               Delete
             </button>
@@ -776,8 +618,6 @@ function scoreStore(store, query) {
     score += matchedDepartments * 1.5
     score += matchedSubDepartments * 1
   }
-
-  score += normalizeTreasureScore(store.treasureScore) * 0.35
 
   return {
     score,
@@ -877,7 +717,6 @@ export default function App() {
         address: createForm.address,
         lat: coords.lat,
         lng: coords.lng,
-        treasureScore: normalizeTreasureScore(createForm.treasureScore),
         departments: createForm.departments,
       },
     ])
@@ -893,7 +732,6 @@ export default function App() {
       storeName: store.name,
       address: store.address,
       coords: { lat: store.lat, lng: store.lng },
-      treasureScore: normalizeTreasureScore(store.treasureScore),
       departments: safeArray(store.departments).map((dept) => ({
         ...dept,
         notes: dept.notes || '',
@@ -934,7 +772,6 @@ export default function App() {
               address: editForm.address,
               lat: coords.lat,
               lng: coords.lng,
-              treasureScore: normalizeTreasureScore(editForm.treasureScore),
               departments: editForm.departments,
             }
           : s
@@ -966,73 +803,35 @@ export default function App() {
       <MapView stores={stores} onPickLocation={handleMapPick} />
 
       {/* SEARCH */}
-      <div style={{ margin: '10px 0 20px' }}>
+      <div className="search-section">
         <input
-          style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+          className="text-input search-input"
           placeholder="Search for an item..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
         {searchQuery.trim() && searchResults.length === 0 && (
-          <div style={{ marginTop: 10, color: '#667085' }}>
-            No strong matches yet.
-          </div>
+          <div className="muted-text">No strong matches yet.</div>
         )}
 
         {searchResults.length > 0 && (
-          <div style={{ marginTop: 10 }}>
+          <div className="search-results">
             <h3>Top Matches</h3>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-                gap: '12px',
-              }}
-            >
-              {searchResults.map((s) => (
-                <div
-                  key={s.id}
-                  className="store-card"
-                  style={{
-                    minHeight: '170px',
-                    borderRadius: '16px',
-                    padding: '14px',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <strong style={{ color: '#0a1f3c' }}>{s.name}</strong>
-                  <div style={{ color: '#0a1f3c' }}>{shortenAddress(s.address)}</div>
-                  <div style={{ color: '#0a1f3c' }}>Score: {s.score.toFixed(1)}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: 'inline-block',
-                      padding: '4px 8px',
-                      borderRadius: 999,
-                      background: 'rgba(10,31,60,0.08)',
-                      color: '#0a1f3c',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    Discovery {formatTreasureScore(s.treasureScore)}
-                  </div>
+            {searchResults.map((s) => (
+              <div key={s.id} className="store-card">
+                <strong className="store-name">{s.name}</strong>
+                <div className="store-address">{shortenAddress(s.address)}</div>
+                <div className="store-score">Score: {s.score.toFixed(1)}</div>
 
-                  {s.reasons?.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: '0.9rem',
-                        color: '#667085',
-                      }}
-                    >
-                      Matches: {s.reasons.slice(0, 3).join(' • ')}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                {s.reasons?.length > 0 && (
+                  <div className="muted-text matches-line">
+                    Matches: {s.reasons.slice(0, 3).join(' • ')}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -1040,25 +839,19 @@ export default function App() {
       {/* CREATE */}
       {!editId && (
         <form onSubmit={addStore}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-              gap: '16px',
-              alignItems: 'start',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="form-grid">
+            <div className="form-column">
               <input
+                className="text-input"
                 placeholder="Store name"
                 value={createForm.storeName}
                 onChange={(e) =>
                   setCreateForm({ ...createForm, storeName: e.target.value })
                 }
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
               <input
+                className="text-input"
                 placeholder="Address"
                 value={createForm.address}
                 onChange={(e) =>
@@ -1068,25 +861,7 @@ export default function App() {
                     coords: null,
                   })
                 }
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
-
-              <label style={{ display: 'block' }}>
-                Hidden Treasure Score
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={createForm.treasureScore}
-                  onChange={(e) =>
-                    setCreateForm({
-                      ...createForm,
-                      treasureScore: Number(e.target.value),
-                    })
-                  }
-                  style={{ width: '80px', display: 'block', marginTop: 6 }}
-                />
-              </label>
 
               <button type="submit">Add Store</button>
             </div>
@@ -1104,25 +879,19 @@ export default function App() {
       {/* EDIT */}
       {editId && (
         <form onSubmit={saveEdit}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-              gap: '16px',
-              alignItems: 'start',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="form-grid">
+            <div className="form-column">
               <input
+                className="text-input"
                 placeholder="Store name"
                 value={editForm.storeName}
                 onChange={(e) =>
                   setEditForm({ ...editForm, storeName: e.target.value })
                 }
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
               <input
+                className="text-input"
                 placeholder="Address"
                 value={editForm.address}
                 onChange={(e) =>
@@ -1132,27 +901,9 @@ export default function App() {
                     coords: null,
                   })
                 }
-                style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
-              <label style={{ display: 'block' }}>
-                Hidden Treasure Score
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={editForm.treasureScore}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      treasureScore: Number(e.target.value),
-                    })
-                  }
-                  style={{ width: '80px', display: 'block', marginTop: 6 }}
-                />
-              </label>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="edit-buttons">
                 <button type="submit">Save</button>
                 <button type="button" onClick={cancelEdit}>
                   Cancel
@@ -1173,70 +924,36 @@ export default function App() {
       {/* STORE LIST */}
       <h2>Stores</h2>
 
-      {stores.length === 0 && <p style={{ color: '#667085' }}>No stores yet.</p>}
+      {stores.length === 0 && <p className="muted-text">No stores yet.</p>}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-          gap: '12px',
-        }}
-      >
-        {stores.map((store) => (
-          <div
-            key={store.id}
-            className="store-card"
-            onClick={() =>
-              setExpandedStoreId(
-                expandedStoreId === store.id ? null : store.id
-              )
-            }
-            style={{
-              cursor: 'pointer',
-              color: '#0a1f3c',
-              minHeight: '180px',
-              borderRadius: '16px',
-              padding: '14px',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div
-              style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}
-            >
-              <strong style={{ color: '#0a1f3c' }}>{store.name}</strong>
+      {stores.map((store) => (
+        <div
+          key={store.id}
+          className="store-card clickable"
+          onClick={() =>
+            setExpandedStoreId(
+              expandedStoreId === store.id ? null : store.id
+            )
+          }
+        >
+          <div className="store-topline">
+            <strong className="store-name">{store.name}</strong>
 
-              <OptionsMenu
-                onEdit={() => startEdit(store)}
-                onDelete={() => deleteStore(store.id)}
-              />
-            </div>
-
-            <p style={{ marginBottom: 0, color: '#0a1f3c' }}>
-              {shortenAddress(store.address)}
-            </p>
-
-            <div
-              style={{
-                marginTop: 8,
-                display: 'inline-block',
-                padding: '4px 8px',
-                borderRadius: 999,
-                background: 'rgba(10,31,60,0.08)',
-                color: '#0a1f3c',
-                fontSize: '0.85rem',
-              }}
-            >
-              Discovery {formatTreasureScore(store.treasureScore)}
-            </div>
-
-            {expandedStoreId === store.id && (
-              <div style={{ marginTop: 8 }}>
-                <StoreDepartmentsDisplay departments={store.departments} />
-              </div>
-            )}
+            <OptionsMenu
+              onEdit={() => startEdit(store)}
+              onDelete={() => deleteStore(store.id)}
+            />
           </div>
-        ))}
-      </div>
+
+          <p className="store-address">{shortenAddress(store.address)}</p>
+
+          {expandedStoreId === store.id && (
+            <div className="expanded-area">
+              <StoreDepartmentsDisplay departments={store.departments} />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
